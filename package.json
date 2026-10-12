@@ -1,0 +1,18 @@
+{
+  "name": "maati-living",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "framer-motion": "^11.11.17",
+    "lucide-react": "^0.468.0",
+    "next": "^14.2.15",
+    "next-cloudinary": "^6.16.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}
