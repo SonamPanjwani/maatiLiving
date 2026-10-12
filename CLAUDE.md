@@ -9,6 +9,7 @@ Brand voice: warm, plain, unhurried. Short sentences. Natural materials, Indian 
 - **Next.js 14** (App Router), **plain JavaScript** (no TypeScript), React 18
 - **framer-motion** for animation (hero slideshow), **lucide-react** for icons
 - **next-cloudinary** for images (`NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`); falls back to CSS "textile" placeholders when unset or no `publicId`
+- **Supabase** (`@supabase/ssr` + `supabase-js`) for auth, roles and the catalogue; schema in `supabase/migrations/`, setup steps in `docs/SETUP.md`
 - Plain global CSS in `app/globals.css` — no Tailwind, no CSS modules
 - Path alias: `@/*` → project root (`jsconfig.json`)
 
@@ -19,29 +20,44 @@ Commands: `npm run dev`, `npm run build`, `npm start`. No tests or linter config
 ```
 app/
   layout.js            root layout + metadata
-  page.js              home page — server component composing sections
-  globals.css          entire design system
+  page.js              home page — server component composing sections (revalidate 60s)
+  globals.css          entire design system (section 16 = admin)
+  admin/               /admin — login/, (panel)/ products + categories, actions.js (server actions)
+  api/cloudinary/sign  signs admin photo uploads (admin-only)
+middleware.js          /admin only: refresh session, redirect signed-out users to /admin/login
 components/
   home/                one file per home-page section (Navbar, Hero, Intro, Collection,
                        ProductCard, Why, Beliefs, Story, Approach, FinalCta, Footer)
   common/              shared pieces: CloudImage (client wrapper for CldImage),
                        TextilePlaceholder, WhatsAppLink, FloatingWhatsApp
+  admin/               AdminBar, LoginForm, ProductForm, CategoryForm, ImageManager (multi-photo
+                       upload/reorder/cover), SubmitButton, ConfirmSubmit, SetupNotice
+supabase/
+  migrations/          SQL schema + RLS policies (run in Supabase SQL editor)
+  seed.sql             starter categories/products
 src/
   config/site.js       brand + contact config (env-driven), getWhatsAppUrl()
   config/cloudinary.js Cloudinary config, isCloudinaryConfigured
-  data/categories.js   placeholder categories (until Phase 2 DB)
-  data/products.js     placeholder catalogue (until Phase 2 DB)
+  data/categories.js   fallback categories, used when Supabase isn't configured
+  data/products.js     fallback catalogue, used when Supabase isn't configured
   data/hero.js         hero slides (Cloudinary publicIds)
-  lib/catalog.js       async getters for categories/products — the only way pages read the catalogue
+  lib/catalog.js       async storefront getters (Supabase or fallback) + row→shape mappers
+  lib/admin-catalog.js admin reads through the user session (includes hidden products)
+  lib/auth.js          getCurrentUser / getCurrentAdmin / requireAdminPage / assertAdmin
+  lib/supabase/        config, server (cookie) client, public (cookie-free) client, middleware helper
+  lib/slugify.js
   lib/format.js        formatPrice (paise → "₹450")
 ```
 
 ## Conventions
 
-- **Server components by default.** Add `"use client"` only for state/effects/handlers/framer-motion. Currently client: `Navbar`, `Hero`, `CloudImage`.
+- **Server components by default.** Add `"use client"` only for state/effects/handlers/framer-motion. Currently client: `Navbar`, `Hero`, `CloudImage`, and the interactive admin forms.
 - `CldImage` has no `"use client"` directive — always import `@/components/common/CloudImage` from server components.
 - Contact details come from env via `siteConfig` (see `.env.example`); never hard-code them in components.
-- Read catalogue data only through `src/lib/catalog.js` (async). Never import `src/data/*` from components — in Phase 2 the getters switch to Supabase.
+- Read catalogue data only through `src/lib/catalog.js` (async). Never import `src/data/*` from components.
+- **Admin security is three layers — keep all three for any new admin feature:** middleware (signed in) → `(panel)/layout.js` `requireAdminPage()` (role = admin) → `assertAdmin()` at the top of every server action / route handler. The database enforces the same through RLS (`public.is_admin()`).
+- Roles change only via SQL (`update profiles set role = 'admin' …`); there is deliberately no UI or policy for it.
+- Storefront reads use the cookie-free public client so pages stay static; admin mutations call `revalidatePath("/", "layout")`.
 - Prices are integers in **paise**; display with `formatPrice`.
 - Secrets/env: `.env.local` (git-ignored). Document every new var in `.env.example`.
 
@@ -52,7 +68,7 @@ src/
   - `images` holds any number of photos; `images[0]` is the cover. Cloudinary path: `maati-living/products/<slug>/<nn>`.
   - `featured` products appear in "The Maati Edit" on the home page.
 
-Planned Supabase tables (Phase 2): `categories (id, slug, name, description, parent_id, image_public_id, sort_order)`, `products (id, slug, name, category_id, price_paise, stock, …, is_available, is_featured, sku)`, `product_images (id, product_id, public_id, alt, sort_order)`. The getters in `src/lib/catalog.js` must keep returning the shape above.
+Supabase tables (`supabase/migrations/0001_auth_and_catalogue.sql`): `profiles (id, email, full_name, role)`, `categories (id, slug, name, description, parent_id, image_public_id, image_alt, sort_order)`, `products (id, slug, name, category_id, price_paise, stock, …, is_available, is_featured, sku)`, `product_images (id, product_id, public_id, alt, sort_order)`. `mapProduct`/`mapCategory` in `src/lib/catalog.js` convert rows to the shape above. Admin uploads land in Cloudinary under `maati-living/products/` and `maati-living/categories/` with auto-generated ids. New schema changes go in a new numbered migration file.
 
 ## Design system (`app/globals.css`)
 
@@ -80,9 +96,9 @@ Patterns: `.section` / `.section-grid` (two-column, 10vw padding), `.section-hea
 ## Roadmap
 
 - **Phase 0 — Foundation** ✅ git, CLAUDE.md, componentised home page, readable CSS, env-driven config, real product data.
-- **Phase 1 — Supabase auth + RBAC** — Supabase Auth, `profiles` table with `role` (`admin` | `customer`), middleware route protection, admin vs customer access.
-- **Phase 2 — Shop + product pages** — `/shop`, `/shop/[category]`, `/products/[slug]` with a multi-image gallery; categories + products + product_images move from `src/data` to Supabase. Until 2b ships, products are entered via the Supabase Table Editor / CSV import.
-- **Phase 2b — Admin: product management** — admin-only `/admin/products` and `/admin/categories`: add/edit/hide products, multi-image upload to Cloudinary (`CldUploadWidget`) with reorder + choose cover, price, stock, featured flag.
+- **Phase 1 — Supabase auth + RBAC** ✅ (code) — email/password login at `/admin/login`, `profiles.role` (`admin` | `customer`), RLS, middleware. Single admin (the owner); public sign-up off until Phase 4.
+- **Phase 2b — Admin: product management** ✅ (code) — `/admin/products`, `/admin/categories`: add/edit/hide/delete, sub-categories, multi-photo upload with reorder + cover + alt text, price, stock, featured.
+- **Phase 2 — Shop + product pages** — `/shop`, `/shop/[category]`, `/products/[slug]` with a multi-image gallery, reading via `src/lib/catalog.js`.
 - **Phase 3 — Cart + Razorpay checkout** — cart, address, Razorpay payment, order records, confirmation emails.
 - **Phase 4 — Customer account** — order history, addresses, profile.
 - **Phase 5 — Admin panel (rest)** — orders, inventory adjustments, customers, dashboard.
@@ -93,5 +109,5 @@ Do not add auth, DB or payments ahead of their phase.
 ## Known TODOs
 
 - Real WhatsApp number and contact email (`NEXT_PUBLIC_WHATSAPP_NUMBER`, `NEXT_PUBLIC_CONTACT_EMAIL`).
-- Product photos are not yet uploaded to Cloudinary — paths `maati-living/products/<slug>/<nn>` currently 404 when Cloudinary is configured.
+- Supabase project not created yet — follow `docs/SETUP.md`. Until then the storefront uses `src/data/*`, whose image paths 404 on Cloudinary (real photos get uploaded via /admin).
 - Story section still uses a textile placeholder; "Meet the women behind Maati" links to `#contact` (needs an About page).

@@ -749,3 +749,474 @@ footer small {
   .hero-slide { transition: none !important; }
   .product-image-wrap .textile { transition: none; }
 }
+
+/* ==========================================================================
+   16. Admin (/admin) — same tokens and type as the storefront
+   ========================================================================== */
+
+.admin {
+  min-height: 100vh;
+  background: var(--cotton);
+}
+
+.admin h1 {
+  font-size: clamp(2.4rem, 4vw, 3.6rem);
+}
+
+.admin code {
+  font-size: .9em;
+  background: var(--cotton-2);
+  padding: 1px 5px;
+}
+
+.admin-bar {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+  padding: 0 5vw;
+  background: var(--charcoal);
+  color: var(--cotton);
+}
+
+.admin-bar .logo img {
+  height: 30px;
+}
+
+.admin-bar nav {
+  display: flex;
+  gap: 2rem;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: .16em;
+}
+
+.admin-bar nav a:hover {
+  color: var(--turmeric);
+}
+
+.admin-bar-user {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  font-size: 12px;
+  color: var(--cotton-2);
+}
+
+.admin-bar-user button {
+  background: none;
+  border: 1px solid currentColor;
+  color: var(--cotton);
+  padding: 6px 10px;
+  text-transform: uppercase;
+  letter-spacing: .13em;
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.admin-page {
+  padding: 4rem 5vw 6rem;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.admin-narrow {
+  max-width: 640px;
+  padding-top: 10vh;
+}
+
+.admin-narrow > p:not(.eyebrow) {
+  margin-top: 2rem;
+}
+
+.admin-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 2rem;
+  padding-bottom: 2rem;
+  margin-bottom: 2.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-heading .button {
+  gap: .6rem;
+}
+
+.admin-success,
+.admin-error {
+  padding: 12px 16px;
+  margin: 0 0 2rem;
+  font-size: 13px;
+  border-left: 3px solid;
+}
+
+.admin-success {
+  background: rgba(110,118,88,.14);
+  border-color: var(--moss);
+}
+
+.admin-error {
+  background: rgba(161,61,46,.1);
+  border-color: var(--madder);
+  color: var(--madder);
+}
+
+.admin-empty {
+  padding: 4rem 0;
+  font: 1.4rem/1.4 Fraunces, serif;
+}
+
+.admin-note {
+  font-size: 12px;
+  color: #665e54;
+  margin: .8rem 0 0;
+}
+
+.admin-warn {
+  color: var(--madder);
+  font-weight: 600;
+}
+
+/* Tables */
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.admin-table th {
+  text-align: left;
+  font-size: 10px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--turmeric);
+  padding: 0 1rem .8rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-table td {
+  padding: 1rem 1rem 1rem 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.admin-table td small {
+  display: block;
+  color: #665e54;
+  font-size: 11px;
+}
+
+.admin-table td a strong {
+  font: 400 1.15rem Fraunces, serif;
+}
+
+.admin-table td a:hover strong {
+  color: var(--madder);
+}
+
+.admin-table tr.is-editing td {
+  background: var(--cotton-2);
+}
+
+.admin-table-thumb {
+  width: 64px;
+}
+
+.admin-table-thumb img,
+.admin-thumb-empty {
+  display: block;
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+}
+
+.admin-thumb-empty {
+  background: var(--cotton-2);
+}
+
+.admin-table-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1.2rem;
+}
+
+/* Forms */
+
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  max-width: 420px;
+}
+
+.admin-form-wide {
+  max-width: 880px;
+  gap: 2.5rem;
+}
+
+.admin-form fieldset {
+  border: 0;
+  border-top: 1px solid var(--line);
+  padding: 1.6rem 0 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.admin-form legend {
+  padding: 0 1rem 0 0;
+  margin: 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  flex: 1;
+}
+
+.field > span {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.field small {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  color: #665e54;
+  margin-left: .4rem;
+}
+
+.field input,
+.field select,
+.field textarea,
+.image-tile input {
+  font: inherit;
+  font-size: 14px;
+  color: var(--charcoal);
+  background: rgba(255,255,255,.35);
+  border: 1px solid rgba(42,38,34,.25);
+  border-radius: 0;
+  padding: 10px 12px;
+  width: 100%;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus,
+.image-tile input:focus {
+  outline: 2px solid var(--turmeric);
+  outline-offset: -1px;
+  border-color: transparent;
+}
+
+.field-row {
+  display: flex;
+  gap: 1.2rem;
+}
+
+.field-checks {
+  display: flex;
+  gap: 2rem;
+  font-size: 13px;
+}
+
+.field-checks label {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  cursor: pointer;
+}
+
+.field-checks input {
+  accent-color: var(--madder);
+  width: 16px;
+  height: 16px;
+}
+
+.admin-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.admin .button {
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.admin .button:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
+.admin-danger {
+  background: none;
+  border: 1px solid var(--madder);
+  color: var(--madder);
+  padding: 8px 12px;
+  text-transform: uppercase;
+  letter-spacing: .13em;
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.admin-danger:hover {
+  background: var(--madder);
+  color: var(--cotton);
+}
+
+.admin-split {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 4rem;
+  align-items: start;
+}
+
+.admin-panel {
+  background: var(--cotton-2);
+  padding: 2rem;
+}
+
+/* Image manager */
+
+.image-grid {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.image-tile {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+}
+
+.image-tile input {
+  font-size: 12px;
+  padding: 6px 8px;
+}
+
+.image-thumb {
+  position: relative;
+  aspect-ratio: 1;
+  background: var(--cotton-2);
+  overflow: hidden;
+}
+
+.image-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: var(--charcoal);
+  color: var(--cotton);
+  font-size: 9px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+}
+
+.image-actions {
+  display: flex;
+  gap: .3rem;
+}
+
+.image-actions button {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--line);
+  padding: 5px 0;
+  cursor: pointer;
+  color: var(--charcoal);
+}
+
+.image-actions button:hover:not(:disabled) {
+  border-color: var(--madder);
+  color: var(--madder);
+}
+
+.image-actions button:disabled {
+  opacity: .3;
+  cursor: default;
+}
+
+.admin-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: .7rem;
+  background: none;
+  border: 1px dashed rgba(42,38,34,.4);
+  padding: 14px 18px;
+  text-transform: uppercase;
+  letter-spacing: .13em;
+  font-size: 10px;
+  cursor: pointer;
+  color: var(--charcoal);
+}
+
+.admin-upload:hover {
+  border-color: var(--madder);
+  color: var(--madder);
+}
+
+/* Login */
+
+.admin-login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 8vw;
+  background: var(--charcoal);
+}
+
+.admin-login-panel {
+  width: 100%;
+  max-width: 440px;
+  background: var(--cotton);
+  padding: 3rem;
+}
+
+.admin-login-logo {
+  display: block;
+  height: 34px;
+  width: auto;
+  margin-bottom: 2.5rem;
+}
+
+.admin-login h1 {
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 700px) {
+  .admin-bar { gap: 1.2rem; padding: 0 6vw; }
+  .admin-bar-user span { display: none; }
+  .admin-page { padding: 2.5rem 6vw 4rem; }
+  .admin-heading { flex-direction: column; align-items: flex-start; }
+  .admin-split { grid-template-columns: 1fr; }
+  .admin-table { display: block; overflow-x: auto; }
+  .field-row { flex-direction: column; }
+  .field-checks { flex-direction: column; gap: .8rem; }
+  .admin-login-panel { padding: 2rem; }
+}

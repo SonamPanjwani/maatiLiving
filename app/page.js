@@ -10,6 +10,9 @@ import FinalCta from "@/components/home/FinalCta";
 import Footer from "@/components/home/Footer";
 import FloatingWhatsApp from "@/components/common/FloatingWhatsApp";
 
+// Re-fetch the catalogue at most once a minute; admin saves also revalidate immediately.
+export const revalidate = 60;
+
 export default function Home() {
   return <main id="top">
     <Navbar />
