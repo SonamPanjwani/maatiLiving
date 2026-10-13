@@ -44,7 +44,10 @@ Only you need an account until customer accounts arrive in Phase 4.
 
 ## 5. Get the keys
 
-**Supabase:** **Project Settings → API** (or **Connect**). Copy the **Project URL** and the **anon / public** key.
+**Supabase:**
+- **Project URL**: the **Connect** button at the top of the dashboard, or ⚙️ **Project Settings → Data API**. Looks like `https://abcdxyz.supabase.co`.
+- **Public key**: ⚙️ **Project Settings → API Keys**. Copy the **Publishable key** (`sb_publishable_…`), or the legacy **anon / public** key (`eyJ…`) under "Legacy API keys". Either works in `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- Never copy the **secret** (`sb_secret_…`) or **service_role** key. The site doesn't need them.
 
 **Cloudinary** (for photo uploads): [console.cloudinary.com](https://console.cloudinary.com) → **Settings → API Keys**. Copy the **API Key** and **API Secret**. Your cloud name is already set.
 
