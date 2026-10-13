@@ -24,13 +24,23 @@ Only you need an account until customer accounts arrive in Phase 4.
 
 1. **Authentication → Users → Add user → Create new user**.
    - Email: your email · Password: a strong one · tick **Auto Confirm User**.
-2. **SQL Editor → New query**, run (with your email):
+2. **SQL Editor → New query**, run (with your email). It also works if the user was created before step 2:
 
    ```sql
-   update public.profiles set role = 'admin' where email = 'you@example.com';
+   insert into public.profiles (id, email, role)
+   select id, email, 'admin' from auth.users
+   where lower(email) = lower('you@example.com')
+   on conflict (id) do update set role = 'admin'
+   returning email, role;
    ```
 
-   It should say "1 row affected". This is the only way to make someone an admin.
+   You should see one row: your email and `admin`. No rows means the email doesn't match a user. Copy it exactly from **Authentication → Users**. This is the only way to make someone an admin.
+
+   To check at any time:
+
+   ```sql
+   select u.email, p.role from auth.users u left join public.profiles p on p.id = u.id;
+   ```
 
 ## 5. Get the keys
 
