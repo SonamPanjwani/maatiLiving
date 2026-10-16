@@ -1,3 +1,4 @@
+import Link from "next/link";
 import CloudImage from "@/components/common/CloudImage";
 import TextilePlaceholder from "@/components/common/TextilePlaceholder";
 import WhatsAppLink from "@/components/common/WhatsAppLink";
@@ -8,8 +9,9 @@ const placeholderVariants = ["indigo", "rust", "moss"];
 
 export default function ProductCard({ product, index }) {
   const cover = product.images[0] ?? { publicId: "", alt: product.name };
+  const href = `/products/${product.slug}`;
   return <article className="product-card">
-    <div className="product-image-wrap">{isCloudinaryConfigured && cover.publicId ? <CloudImage src={cover.publicId} alt={cover.alt} fill sizes="(max-width: 700px) 84vw, 30vw" crop="fill" gravity="auto" format="auto" quality="auto" /> : <TextilePlaceholder variant={placeholderVariants[index % placeholderVariants.length]} label={cover.alt} />}<span className="product-index">{String(index + 1).padStart(2, "0")}</span></div>
-    <div className="product-meta"><span className="eyebrow">{product.category?.name}</span><h3>{product.name}</h3><span className="price">{formatPrice(product.price)}</span><p>{product.sourcingNote}</p><WhatsAppLink productName={product.name} /></div>
+    <Link href={href} className="product-image-wrap" tabIndex={-1} aria-hidden="true">{isCloudinaryConfigured && cover.publicId ? <CloudImage src={cover.publicId} alt={cover.alt} fill sizes="(max-width: 700px) 84vw, 30vw" crop="fill" gravity="auto" format="auto" quality="auto" /> : <TextilePlaceholder variant={placeholderVariants[index % placeholderVariants.length]} label={cover.alt} />}<span className="product-index">{product.stock === 0 ? "SOLD OUT" : String(index + 1).padStart(2, "0")}</span></Link>
+    <div className="product-meta"><span className="eyebrow">{product.category?.name}</span><h3><Link href={href}>{product.name}</Link></h3><span className="price">{formatPrice(product.price)}</span><p>{product.sourcingNote}</p><WhatsAppLink productName={product.name} /></div>
   </article>;
 }

@@ -72,19 +72,50 @@ export async function getCategoryBySlug(slug) {
   return mapCategory(row);
 }
 
+// The category plus every category nested under it, at any depth.
+function categoryFamily(categories, rootSlug) {
+  const family = new Set([rootSlug]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const category of categories) {
+      if (category.parentSlug && family.has(category.parentSlug) && !family.has(category.slug)) {
+        family.add(category.slug);
+        grew = true;
+      }
+    }
+  }
+  return categories.filter((category) => family.has(category.slug));
+}
+
+// With categorySlug, includes products from its sub-categories too.
 export async function getProducts({ categorySlug } = {}) {
+  let family = null;
+  if (categorySlug) {
+    const categories = await getCategories();
+    if (!categories.some((category) => category.slug === categorySlug)) return [];
+    family = categoryFamily(categories, categorySlug);
+  }
+
   if (!isSupabaseConfigured) {
+    const slugs = family && new Set(family.map((category) => category.slug));
     return staticProducts
-      .filter((product) => product.available && (!categorySlug || product.categorySlug === categorySlug))
+      .filter((product) => product.available && (!slugs || slugs.has(product.categorySlug)))
       .map(withStaticCategory);
   }
   let query = getSupabasePublicClient().from("products").select(PRODUCT_COLUMNS).eq("is_available", true).order("created_at");
-  if (categorySlug) {
-    const category = await getCategoryBySlug(categorySlug);
-    if (!category) return [];
-    query = query.eq("category_id", category.id);
-  }
+  if (family) query = query.in("category_id", family.map((category) => category.id));
   return throwOnError(await query).map(mapProduct);
+}
+
+// Same-category products first, then others, excluding the product itself.
+export async function getRelatedProducts(product, limit = 3) {
+  const all = await getProducts();
+  const others = all.filter((item) => item.id !== product.id);
+  return [
+    ...others.filter((item) => item.categorySlug === product.categorySlug),
+    ...others.filter((item) => item.categorySlug !== product.categorySlug),
+  ].slice(0, limit);
 }
 
 export async function getFeaturedProducts() {

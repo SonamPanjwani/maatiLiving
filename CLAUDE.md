@@ -21,13 +21,17 @@ Commands: `npm run dev`, `npm run build`, `npm start`. No tests or linter config
 app/
   layout.js            root layout + metadata
   page.js              home page — server component composing sections (revalidate 60s)
-  globals.css          entire design system (section 16 = admin)
+  globals.css          entire design system (16 = admin, 17 = shop/product pages)
+  (store)/            inner storefront pages sharing layout.js (solid Navbar, Footer, WhatsApp):
+                       shop/ (all), shop/[category]/ (incl. sub-categories), products/[slug]/
   admin/               /admin — login/, (panel)/ products + categories, actions.js (server actions)
   api/cloudinary/sign  signs admin photo uploads (admin-only)
 middleware.js          /admin only: refresh session, redirect signed-out users to /admin/login
 components/
   home/                one file per home-page section (Navbar, Hero, Intro, Collection,
-                       ProductCard, Why, Beliefs, Story, Approach, FinalCta, Footer)
+                       ProductCard, Why, Beliefs, Story, Approach, FinalCta, Footer).
+                       Navbar (`solid` prop off the hero), Footer and ProductCard are reused site-wide.
+  shop/                ShopListing, CategoryNav, ProductGallery (client: swipe + thumbnails)
   common/              shared pieces: CloudImage (client wrapper for CldImage),
                        TextilePlaceholder, WhatsAppLink, FloatingWhatsApp
   admin/               AdminBar, LoginForm, ProductForm, CategoryForm, ImageManager (multi-photo
@@ -98,7 +102,7 @@ Patterns: `.section` / `.section-grid` (two-column, 10vw padding), `.section-hea
 - **Phase 0 — Foundation** ✅ git, CLAUDE.md, componentised home page, readable CSS, env-driven config, real product data.
 - **Phase 1 — Supabase auth + RBAC** ✅ (code) — email/password login at `/admin/login`, `profiles.role` (`admin` | `customer`), RLS, middleware. Single admin (the owner); public sign-up off until Phase 4.
 - **Phase 2b — Admin: product management** ✅ (code) — `/admin/products`, `/admin/categories`: add/edit/hide/delete, sub-categories, multi-photo upload with reorder + cover + alt text, price, stock, featured.
-- **Phase 2 — Shop + product pages** — `/shop`, `/shop/[category]`, `/products/[slug]` with a multi-image gallery, reading via `src/lib/catalog.js`.
+- **Phase 2 — Shop + product pages** ✅ — `/shop`, `/shop/[category]` (includes sub-categories), `/products/[slug]` with swipeable gallery, stock status, details, related products, per-product metadata/OG image. Static + revalidate 60s. Ordering is still "Enquire on WhatsApp" until Phase 3.
 - **Phase 3 — Cart + Razorpay checkout** — cart, address, Razorpay payment, order records, confirmation emails.
 - **Phase 4 — Customer account** — order history, addresses, profile.
 - **Phase 5 — Admin panel (rest)** — orders, inventory adjustments, customers, dashboard.
