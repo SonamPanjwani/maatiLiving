@@ -1,4 +1,5 @@
 import "./globals.css";
+import { CartProvider } from "@/components/cart/CartProvider";
 
 export const metadata = {
   title: "Maati Living — Thoughtfully chosen. Naturally better.",
@@ -8,7 +9,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body><CartProvider>{children}</CartProvider></body>
     </html>
   );
 }

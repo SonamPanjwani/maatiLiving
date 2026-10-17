@@ -108,6 +108,15 @@ export async function getProducts({ categorySlug } = {}) {
   return throwOnError(await query).map(mapProduct);
 }
 
+// Current price/stock for a cart. Only visible products are returned; callers treat missing ids as unavailable.
+export async function getProductsByIds(ids) {
+  const unique = [...new Set(ids.filter(Boolean))];
+  if (unique.length === 0) return [];
+  if (!isSupabaseConfigured) return staticProducts.filter((product) => product.available && unique.includes(product.id)).map(withStaticCategory);
+  const rows = throwOnError(await getSupabasePublicClient().from("products").select(PRODUCT_COLUMNS).eq("is_available", true).in("id", unique));
+  return rows.map(mapProduct);
+}
+
 // Same-category products first, then others, excluding the product itself.
 export async function getRelatedProducts(product, limit = 3) {
   const all = await getProducts();

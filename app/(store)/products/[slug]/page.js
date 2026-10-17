@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight } from "lucide-react";
+import AddToCart from "@/components/cart/AddToCart";
 import ProductCard from "@/components/home/ProductCard";
 import ProductGallery from "@/components/shop/ProductGallery";
 import { cloudinaryConfig } from "@/src/config/cloudinary";
@@ -66,8 +67,8 @@ export default async function ProductPage({ params }) {
         {product.shortDescription && <p className="product-description">{product.shortDescription}</p>}
 
         <p className={`product-stock product-stock-${stock.tone}`}>{stock.text}</p>
-        <a className="button button-dark product-cta" href={getWhatsAppUrl(product.name)} target="_blank" rel="noreferrer">Enquire on WhatsApp <ArrowUpRight size={16} /></a>
-        <p className="product-cta-note">We take orders on WhatsApp for now. Online checkout is coming soon.</p>
+        <AddToCart product={{ id: product.id, slug: product.slug, name: product.name, price: product.price, stock: product.stock, images: product.images.slice(0, 1) }} />
+        <p className="product-cta-note">Questions about this piece? <a className="text-link" href={getWhatsAppUrl(product.name)} target="_blank" rel="noreferrer">Ask us on WhatsApp <ArrowUpRight size={13} /></a></p>
 
         {facts.length > 0 && <dl className="product-facts">
           {facts.map(([label, value]) => <div key={label}><dt className="eyebrow">{label}</dt><dd>{value}</dd></div>)}

@@ -160,3 +160,20 @@ export async function deleteCategory(formData) {
   revalidateStorefront();
   redirect("/admin/categories");
 }
+
+// ---------------------------------------------------------------------------
+// Orders
+// ---------------------------------------------------------------------------
+
+const ADMIN_ORDER_STATUSES = ["paid", "shipped", "delivered", "cancelled"];
+
+export async function updateOrderStatus(formData) {
+  await assertAdmin();
+  const id = text(formData, "id");
+  const status = text(formData, "status");
+  if (!ADMIN_ORDER_STATUSES.includes(status)) redirect(`/admin/orders/${id}?error=${encodeURIComponent("Choose a valid status.")}`);
+  const { error } = await createSupabaseServerClient().from("orders").update({ status }).eq("id", id);
+  if (error) redirect(`/admin/orders/${id}?error=${encodeURIComponent(friendlyDbError(error))}`);
+  revalidatePath("/admin/orders");
+  redirect(`/admin/orders/${id}?saved=1`);
+}

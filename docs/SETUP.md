@@ -79,6 +79,64 @@ Open http://localhost:3000/admin and sign in.
 
 Changes show on the home page immediately after saving.
 
+## 8. Turn on cart and payments (Phase 3)
+
+### 8.1 Orders tables
+**SQL Editor → New query**: paste all of `supabase/migrations/0002_orders.sql` → **Run**.
+
+### 8.2 Supabase secret key
+Guest checkout saves orders with a server-only key.
+
+⚙️ **Project Settings → API Keys** → **Secret keys** → copy the `sb_secret_…` key (create one if none exists). Add to `.env.local`:
+
+```
+SUPABASE_SECRET_KEY=sb_secret_xxxxxxxx
+```
+
+This key can read and change everything. Keep it only in `.env.local` (and later your hosting settings). Never put `NEXT_PUBLIC_` in front of it.
+
+### 8.3 Razorpay test keys
+1. Sign up at [razorpay.com](https://razorpay.com). You can start KYC in parallel.
+2. Switch the dashboard to **Test Mode** (toggle at the top) → **Account & Settings → API Keys → Generate Key**.
+3. Add both to `.env.local`:
+
+   ```
+   NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_xxxxxxxx
+   RAZORPAY_KEY_SECRET=xxxxxxxx
+   ```
+4. Restart `npm run dev`. Add something to the cart → **Checkout** → **Pay securely**. In test mode:
+   - **UPI:** use `success@razorpay` to succeed or `failure@razorpay` to fail.
+   - **Card:** use a test card from Razorpay's docs ("Test card details").
+   
+   No real money moves.
+5. After paying, you land on the order confirmation page, and the order appears in **/admin → Orders → To ship**.
+
+### 8.4 Webhook (when the site is online)
+The webhook makes sure an order is marked paid even if the customer closes the tab right after paying. It needs a public URL, so set it up once the site is deployed (Phase 6).
+
+**Razorpay → Account & Settings → Webhooks → Add new webhook**:
+- URL: `https://<your-domain>/api/razorpay/webhook`
+- Secret: make up a long random string and put the same one in `.env.local` as `RAZORPAY_WEBHOOK_SECRET`
+- Events: `payment.captured`, `order.paid`, `payment.failed`
+
+### 8.5 Order emails (optional)
+Without this, orders still work and show in /admin. With it, the customer gets a confirmation and you get a new-order alert.
+1. Sign up at [resend.com](https://resend.com) → add and verify your domain → create an API key.
+2. Add to `.env.local`:
+
+   ```
+   RESEND_API_KEY=re_xxxxxxxx
+   EMAIL_FROM=Maati Living <orders@yourdomain.com>
+   ORDER_NOTIFY_EMAIL=you@example.com
+   NEXT_PUBLIC_SITE_URL=http://localhost:3000
+   ```
+
+### 8.6 Going live (after KYC)
+In the Razorpay dashboard switch to **Live Mode** → generate live keys → replace the two test keys (they start with `rzp_live_`). Set up the webhook again in Live Mode, since test and live webhooks are separate. The "Test mode" note on checkout disappears automatically.
+
+### Shipping charges
+Currently ₹99 delivery, free from ₹999. To change it, edit `src/config/shop.js`.
+
 ## Troubleshooting
 
 | Problem | Fix |
@@ -87,3 +145,6 @@ Changes show on the home page immediately after saving.
 | "This account doesn't have admin access" | Step 4.2 not run, or the email in the SQL doesn't match exactly. |
 | Upload button missing / "Photo uploads need…" | `NEXT_PUBLIC_CLOUDINARY_API_KEY` or `CLOUDINARY_API_SECRET` missing; restart dev server. |
 | Upload widget says "Invalid signature" | API secret is wrong or belongs to a different Cloudinary account than the cloud name. |
+| Checkout says "Online payment isn't switched on yet" | One of `SUPABASE_SECRET_KEY`, `NEXT_PUBLIC_RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` is missing; restart dev server. |
+| "We couldn't start the payment" | Razorpay key/secret mismatch (test key with live secret, or a typo), or 0002 SQL not run. The terminal running `npm run dev` shows the exact error. |
+| Paid but order shows "Confirming payment" | The browser closed before confirming. The webhook (8.4) fixes this automatically once it's set up. |

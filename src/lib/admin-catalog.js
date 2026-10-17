@@ -26,3 +26,14 @@ export async function adminCountProductsByCategory() {
   const rows = unwrap(await createSupabaseServerClient().from("products").select("category_id"));
   return rows.reduce((counts, row) => ({ ...counts, [row.category_id]: (counts[row.category_id] ?? 0) + 1 }), {});
 }
+
+const ORDER_LIST_COLUMNS = "id, order_number, status, customer_name, city, state, total_paise, created_at, paid_at, order_items(quantity)";
+
+export async function adminGetOrders({ statuses }) {
+  return unwrap(await createSupabaseServerClient().from("orders").select(ORDER_LIST_COLUMNS)
+    .in("status", statuses).order("created_at", { ascending: false }).limit(200));
+}
+
+export async function adminGetOrder(id) {
+  return unwrap(await createSupabaseServerClient().from("orders").select("*, order_items(*)").eq("id", id).maybeSingle());
+}

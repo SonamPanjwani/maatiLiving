@@ -23,15 +23,19 @@ app/
   page.js              home page — server component composing sections (revalidate 60s)
   globals.css          entire design system (16 = admin, 17 = shop/product pages)
   (store)/            inner storefront pages sharing layout.js (solid Navbar, Footer, WhatsApp):
-                       shop/ (all), shop/[category]/ (incl. sub-categories), products/[slug]/
+                       shop/ (all), shop/[category]/ (incl. sub-categories), products/[slug]/,
+                       cart/, checkout/ (+ actions.js), orders/[orderNumber]/ (?t=access token)
   admin/               /admin — login/, (panel)/ products + categories, actions.js (server actions)
   api/cloudinary/sign  signs admin photo uploads (admin-only)
+  api/razorpay/webhook verifies Razorpay webhook signature, marks orders paid/failed
 middleware.js          /admin only: refresh session, redirect signed-out users to /admin/login
 components/
   home/                one file per home-page section (Navbar, Hero, Intro, Collection,
                        ProductCard, Why, Beliefs, Story, Approach, FinalCta, Footer).
                        Navbar (`solid` prop off the hero), Footer and ProductCard are reused site-wide.
   shop/                ShopListing, CategoryNav, ProductGallery (client: swipe + thumbnails)
+  cart/                CartProvider (context + localStorage, wraps app in root layout), CartButton,
+                       AddToCart, CartView, CheckoutForm (opens Razorpay Checkout)
   common/              shared pieces: CloudImage (client wrapper for CldImage),
                        TextilePlaceholder, WhatsAppLink, FloatingWhatsApp
   admin/               AdminBar, LoginForm, ProductForm, CategoryForm, ImageManager (multi-photo
@@ -42,6 +46,7 @@ supabase/
 src/
   config/site.js       brand + contact config (env-driven), getWhatsAppUrl()
   config/cloudinary.js Cloudinary config, isCloudinaryConfigured
+  config/shop.js       shipping rules (shippingFor), quantity limits, Indian states — shared client/server
   data/categories.js   fallback categories, used when Supabase isn't configured
   data/products.js     fallback catalogue, used when Supabase isn't configured
   data/hero.js         hero slides (Cloudinary publicIds)
@@ -49,6 +54,11 @@ src/
   lib/admin-catalog.js admin reads through the user session (includes hidden products)
   lib/auth.js          getCurrentUser / getCurrentAdmin / requireAdminPage / assertAdmin
   lib/supabase/        config, server (cookie) client, public (cookie-free) client, middleware helper
+  lib/orders.js        server-only: quoteCart (re-prices from DB), validateCustomer, create/markPaid/lookup
+  lib/razorpay.js      server-only: create order, verify payment + webhook signatures
+  lib/email.js         server-only: optional Resend order emails (no-op without RESEND_API_KEY)
+  lib/order-status.js  STATUS_LABELS
+  lib/supabase/admin.js server-only secret-key client (bypasses RLS) — checkout/payment/order lookup only
   lib/slugify.js
   lib/format.js        formatPrice (paise → "₹450")
 ```
@@ -63,6 +73,8 @@ src/
 - Roles change only via SQL (`update profiles set role = 'admin' …`); there is deliberately no UI or policy for it.
 - Storefront reads use the cookie-free public client so pages stay static; admin mutations call `revalidatePath("/", "layout")`.
 - Prices are integers in **paise**; display with `formatPrice`.
+- **Payments:** never trust browser prices. `quoteCart` re-reads price/stock; `startCheckout` refuses if anything changed; orders are paid only via `markOrderPaid` (SQL `mark_order_paid`, idempotent, decrements stock once) after a verified Razorpay signature (checkout handler or webhook). `mark_order_paid` is executable by `service_role` only.
+- The secret-key client (`src/lib/supabase/admin.js`) is for guest checkout and order lookups by access token only; admin screens use the session client so RLS applies.
 - Secrets/env: `.env.local` (git-ignored). Document every new var in `.env.example`.
 
 ## Catalogue data model
@@ -103,9 +115,9 @@ Patterns: `.section` / `.section-grid` (two-column, 10vw padding), `.section-hea
 - **Phase 1 — Supabase auth + RBAC** ✅ (code) — email/password login at `/admin/login`, `profiles.role` (`admin` | `customer`), RLS, middleware. Single admin (the owner); public sign-up off until Phase 4.
 - **Phase 2b — Admin: product management** ✅ (code) — `/admin/products`, `/admin/categories`: add/edit/hide/delete, sub-categories, multi-photo upload with reorder + cover + alt text, price, stock, featured.
 - **Phase 2 — Shop + product pages** ✅ — `/shop`, `/shop/[category]` (includes sub-categories), `/products/[slug]` with swipeable gallery, stock status, details, related products, per-product metadata/OG image. Static + revalidate 60s. Ordering is still "Enquire on WhatsApp" until Phase 3.
-- **Phase 3 — Cart + Razorpay checkout** — cart, address, Razorpay payment, order records, confirmation emails.
+- **Phase 3 — Cart + Razorpay checkout** ✅ (code) — localStorage cart, guest checkout with address, Razorpay Checkout + signature verification, webhook backstop, `orders`/`order_items` (`0002_orders.sql`), confirmation page by access token, optional Resend emails, basic `/admin/orders` (list by status, detail, mark shipped/delivered/cancelled). Needs Razorpay test keys + `SUPABASE_SECRET_KEY` to run (docs/SETUP.md §8).
 - **Phase 4 — Customer account** — order history, addresses, profile.
-- **Phase 5 — Admin panel (rest)** — orders, inventory adjustments, customers, dashboard.
+- **Phase 5 — Admin panel (rest)** — order search/export, refunds via Razorpay API, inventory adjustments, customers, dashboard, editable shipping settings.
 - **Phase 6 — Launch** — SEO/metadata, sitemap, analytics, legal pages (privacy, terms, shipping/returns), performance and accessibility pass, deploy.
 
 Do not add auth, DB or payments ahead of their phase.
