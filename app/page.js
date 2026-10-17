@@ -9,12 +9,25 @@ import Approach from "@/components/home/Approach";
 import FinalCta from "@/components/home/FinalCta";
 import Footer from "@/components/home/Footer";
 import FloatingWhatsApp from "@/components/common/FloatingWhatsApp";
+import { jsonLd, siteUrl } from "@/src/config/seo";
+import { siteConfig } from "@/src/config/site";
 
 // Re-fetch the catalogue at most once a minute; admin saves also revalidate immediately.
 export const revalidate = 60;
+export const metadata = { alternates: { canonical: "/" } };
 
 export default function Home() {
-  return <main id="top">
+  const organisation = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: siteConfig.name,
+    url: siteUrl,
+    logo: siteConfig.logoUrl,
+    sameAs: [siteConfig.instagramUrl],
+    contactPoint: { "@type": "ContactPoint", contactType: "customer service", email: siteConfig.email, areaServed: "IN" },
+  };
+  return <main id="content">
+    <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(organisation)} />
     <Navbar />
     <Hero />
     <Intro />

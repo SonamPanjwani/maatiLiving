@@ -3,7 +3,7 @@ import AuthPage from "@/components/account/AuthPage";
 import { SignupForm } from "@/components/account/AuthForms";
 import { getCurrentUser, safeNextPath } from "@/src/lib/auth";
 
-export const metadata = { title: "Create an account — Maati Living", robots: { index: false } };
+export const metadata = { title: "Create an account", robots: { index: false } };
 
 export default async function SignupPage({ searchParams }) {
   const next = safeNextPath(searchParams?.next);

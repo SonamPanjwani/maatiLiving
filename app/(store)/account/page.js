@@ -7,7 +7,7 @@ import { STATUS_LABELS } from "@/src/lib/order-status";
 import { claimGuestOrders } from "@/src/lib/orders";
 import { createSupabaseServerClient } from "@/src/lib/supabase/server";
 
-export const metadata = { title: "My orders — Maati Living", robots: { index: false } };
+export const metadata = { title: "My orders", robots: { index: false } };
 
 const CUSTOMER_STATUS = { ...STATUS_LABELS, paid: "Being prepared" };
 const itemCount = (order) => order.order_items.reduce((sum, item) => sum + item.quantity, 0);

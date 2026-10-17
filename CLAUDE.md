@@ -19,13 +19,16 @@ Commands: `npm run dev`, `npm run build`, `npm start`. No tests or linter config
 
 ```
 app/
-  layout.js            root layout + metadata
   page.js              home page — server component composing sections (revalidate 60s)
   globals.css          entire design system (16 = admin, 17 = shop/product pages)
   (store)/            inner storefront pages sharing layout.js (solid Navbar, Footer, WhatsApp):
                        shop/ (all), shop/[category]/ (incl. sub-categories), products/[slug]/,
                        cart/, checkout/ (+ actions.js), orders/[orderNumber]/ (?t=access token),
-                       account/ (login, signup, forgot/reset-password, orders, addresses, profile; actions.js)
+                       account/ (login, signup, forgot/reset-password, orders, addresses, profile; actions.js),
+                       about/, contact/, privacy/, terms/, returns/, shipping-policy/ (policies read src/config/business.js)
+  layout.js            root: next/font (Fraunces, Work Sans → --font-fraunces/--font-work-sans), metadata
+                       (title template "%s — Maati Living", OG image), skip link, CartProvider
+  sitemap.js, robots.js, not-found.js, error.js
   auth/callback        exchanges Supabase email-link codes for a session, then ?next= (sanitised)
   admin/               /admin — login/, (panel)/: dashboard (page.js), orders (+ export/route.js CSV),
                        products, categories, inventory, customers, settings (delivery); actions.js
@@ -41,6 +44,9 @@ components/
                        AddToCart, CartView, CheckoutForm (opens Razorpay Checkout; saved-address picker)
   account/             AuthForms, AuthPage, AccountShell, ProfileForm, AddressForm, AddressFields (shared w/ checkout)
   orders/              OrderSummary (customer-facing order detail, used by token page + account)
+  legal/               LegalPage (policy frame + draft notice), V (renders TODO values highlighted), BusinessAddress
+scripts/check-launch.mjs  `npm run check:launch`: env, business TODOs, live DB (migrations, admin, products, delivery)
+docs/                  SETUP.md (accounts/keys/migrations), DEPLOY.md (GitHub → Vercel → domain → live checklist)
   common/              shared pieces: CloudImage (client wrapper for CldImage),
                        TextilePlaceholder, WhatsAppLink, FloatingWhatsApp
   admin/               AdminBar, LoginForm, ProductForm, CategoryForm, ImageManager (multi-photo
@@ -52,6 +58,8 @@ supabase/
   seed.sql             starter categories/products
 src/
   config/site.js       brand + contact config (env-driven), getWhatsAppUrl()
+  config/business.js   legal name, address, grievance officer, policy numbers, founders ("TODO…" until filled)
+  config/seo.js        siteUrl (NEXT_PUBLIC_SITE_URL), ogImageUrl(publicId), jsonLd() safe serialiser
   config/cloudinary.js Cloudinary config, isCloudinaryConfigured
   config/shop.js       shippingFor(subtotal, state, settings), defaultShippingSettings, limits, Indian states
   data/categories.js   fallback categories, used when Supabase isn't configured
@@ -116,7 +124,7 @@ Palette (CSS custom properties on `:root`):
 | `--cotton-2` | `#E4D8C2` | alternate light background (collection) |
 | `--line` | `rgba(42,38,34,.13)` | hairline dividers |
 
-Typography: **Fraunces** (serif, 400/500) for `h1–h3`, logo, large questions — tight negative letter-spacing, `<em>` italics in madder for emphasis. **Work Sans** (400/500/600) for body at 15px/1.6. Small uppercase labels use `.eyebrow` (10px, .19em tracking, turmeric).
+Typography (self-hosted via next/font; CSS uses `var(--font-fraunces)` / `var(--font-work-sans)`, never the family names): **Fraunces** (serif, 400/500, real italics) for `h1–h3`, logo, large questions — tight negative letter-spacing, `<em>` italics in madder for emphasis. **Work Sans** (400/500/600) for body at 15px/1.6. Small uppercase labels use `.eyebrow` (10px, .19em tracking, turmeric).
 
 Patterns: `.section` / `.section-grid` (two-column, 10vw padding), `.section-heading`, `.body-copy`, `.button` + `.button-dark` / `.button-light`, `.text-link` (underlined uppercase with `ArrowUpRight`), numbered lists (`01`, `02`…), square corners, no rounded cards, no drop shadows except the floating WhatsApp button. One mobile breakpoint at **700px** (8vw gutters). Respect `prefers-reduced-motion`.
 
@@ -133,9 +141,14 @@ Patterns: `.section` / `.section-grid` (two-column, 10vw padding), `.section-hea
 - **Phase 3 — Cart + Razorpay checkout** ✅ (code) — localStorage cart, guest checkout with address, Razorpay Checkout + signature verification, webhook backstop, `orders`/`order_items` (`0002_orders.sql`), confirmation page by access token, optional Resend emails, basic `/admin/orders` (list by status, detail, mark shipped/delivered/cancelled). Needs Razorpay test keys + `SUPABASE_SECRET_KEY` to run (docs/SETUP.md §8).
 - **Phase 4 — Customer account** ✅ (code) — email/password sign-up with confirmation, password reset, `/account` order history (guest orders claimed by verified email), saved addresses (one default), profile; checkout pre-fills and can save addresses (`0003_customer_accounts.sql`, docs/SETUP.md §9).
 - **Phase 5 — Admin panel** ✅ (code) — dashboard (KPIs + 30-day revenue chart, to-ship, low stock, best sellers), order search/date filter/CSV export, shipping with courier + tracking (+ optional email), cancel/refund (Razorpay) with restock, inventory page, customers list, per-state delivery settings (`0004_admin_operations.sql`, docs/SETUP.md §10).
-- **Phase 6 — Launch** — SEO/metadata, sitemap, analytics, legal pages (privacy, terms, shipping/returns), performance and accessibility pass, deploy.
+- **Phase 6 — Launch** ✅ (code) — policy pages + contact + about (from `business.js`), sitemap/robots, canonical + OG per page, Product/Organization JSON-LD, branded 404/error, self-hosted fonts, security headers, skip link, `check:launch`, docs/DEPLOY.md. Remaining: fill `business.js`, real content, keys, deploy.
 
 Do not add auth, DB or payments ahead of their phase.
+
+## SEO rules
+
+- Metadata is inherited: never put `alternates.canonical` or `openGraph.url` in a layout. Each indexable page sets its own canonical; private pages (`cart`, `checkout`, `account`, `orders`, `admin`) set `robots: { index: false }` and are disallowed in `robots.js`.
+- Page titles are just the page name; the root template appends " — Maati Living" (use `title: { absolute }` to opt out).
 
 ## Known TODOs
 

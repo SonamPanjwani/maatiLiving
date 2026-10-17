@@ -12,7 +12,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }) {
   const category = await getCategoryBySlug(params.category);
   if (!category) return {};
-  return { title: `${category.name} — Maati Living`, description: category.description || undefined };
+  return { title: category.name, description: category.description || undefined, alternates: { canonical: `/shop/${category.slug}` } };
 }
 
 export default async function CategoryPage({ params }) {

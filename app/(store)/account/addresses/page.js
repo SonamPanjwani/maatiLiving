@@ -5,7 +5,7 @@ import { deleteAddress, setDefaultAddress } from "@/app/(store)/account/actions"
 import { requireCustomerPage } from "@/src/lib/auth";
 import { createSupabaseServerClient } from "@/src/lib/supabase/server";
 
-export const metadata = { title: "My addresses — Maati Living", robots: { index: false } };
+export const metadata = { title: "My addresses", robots: { index: false } };
 
 export default async function AddressesPage({ searchParams }) {
   const { profile } = await requireCustomerPage("/account/addresses");

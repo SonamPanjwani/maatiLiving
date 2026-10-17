@@ -4,7 +4,8 @@ import { getCategories, getProducts } from "@/src/lib/catalog";
 export const revalidate = 60;
 
 export const metadata = {
-  title: "Shop — Maati Living",
+  title: "Shop",
+  alternates: { canonical: "/shop" },
   description: "Handcrafted terracotta diyas and coconut shell pieces, made by Indian artisans for everyday life.",
 };
 

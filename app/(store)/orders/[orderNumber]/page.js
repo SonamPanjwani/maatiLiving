@@ -4,7 +4,7 @@ import { getOrderForCustomer } from "@/src/lib/orders";
 import { isSupabaseAdminConfigured } from "@/src/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Your order — Maati Living", robots: { index: false, follow: false } };
+export const metadata = { title: "Your order", robots: { index: false, follow: false } };
 
 // Guest-friendly order page: needs the order number plus its secret access token (?t=).
 export default async function OrderPage({ params, searchParams }) {

@@ -3,7 +3,7 @@ import { ResetPasswordForm } from "@/components/account/AuthForms";
 import ProfileForm from "@/components/account/ProfileForm";
 import { requireCustomerPage } from "@/src/lib/auth";
 
-export const metadata = { title: "My profile — Maati Living", robots: { index: false } };
+export const metadata = { title: "My profile", robots: { index: false } };
 
 export default async function ProfilePage({ searchParams }) {
   const { user, profile } = await requireCustomerPage("/account/profile");

@@ -2,7 +2,7 @@ import AuthPage from "@/components/account/AuthPage";
 import { ResetPasswordForm } from "@/components/account/AuthForms";
 import { requireCustomerPage } from "@/src/lib/auth";
 
-export const metadata = { title: "Set a new password — Maati Living", robots: { index: false } };
+export const metadata = { title: "Set a new password", robots: { index: false } };
 
 // Reached from the reset email via /auth/callback, which signs the user in first.
 export default async function ResetPasswordPage() {

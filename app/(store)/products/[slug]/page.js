@@ -4,7 +4,7 @@ import { ArrowUpRight } from "lucide-react";
 import AddToCart from "@/components/cart/AddToCart";
 import ProductCard from "@/components/home/ProductCard";
 import ProductGallery from "@/components/shop/ProductGallery";
-import { cloudinaryConfig } from "@/src/config/cloudinary";
+import { jsonLd, ogImageUrl, siteUrl } from "@/src/config/seo";
 import { getWhatsAppUrl } from "@/src/config/site";
 import { getCategories, getProductBySlug, getProducts, getRelatedProducts } from "@/src/lib/catalog";
 import { formatPrice } from "@/src/lib/format";
@@ -19,14 +19,13 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }) {
   const product = await getProductBySlug(params.slug);
   if (!product) return {};
-  const cover = product.images[0]?.publicId;
-  const ogImage = cover && cloudinaryConfig.cloudName
-    ? `https://res.cloudinary.com/${cloudinaryConfig.cloudName}/image/upload/c_fill,g_auto,w_1200,h_630,f_jpg,q_auto/${cover}`
-    : undefined;
+  const ogImage = ogImageUrl(product.images[0]?.publicId);
+  const path = `/products/${product.slug}`;
   return {
-    title: `${product.name} — Maati Living`,
+    title: product.name,
     description: product.shortDescription || undefined,
-    openGraph: { title: product.name, description: product.shortDescription || undefined, images: ogImage ? [ogImage] : undefined },
+    alternates: { canonical: path },
+    openGraph: { type: "website", url: path, title: product.name, description: product.shortDescription || undefined, images: ogImage ? [ogImage] : undefined },
   };
 }
 
@@ -51,7 +50,29 @@ export default async function ProductPage({ params }) {
     ["SKU", product.sku],
   ].filter(([, value]) => value);
 
+  // Structured data for search results (price, availability, images).
+  const structured = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.shortDescription || undefined,
+    sku: product.sku || undefined,
+    image: product.images.map((image) => ogImageUrl(image.publicId)).filter(Boolean),
+    material: product.materials.join(", ") || undefined,
+    brand: { "@type": "Brand", name: "Maati Living" },
+    category: product.category?.name,
+    offers: {
+      "@type": "Offer",
+      url: `${siteUrl}/products/${product.slug}`,
+      priceCurrency: "INR",
+      price: (product.price / 100).toFixed(2),
+      availability: product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      itemCondition: "https://schema.org/NewCondition",
+    },
+  };
+
   return <>
+    <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(structured)} />
     <section className="product-detail">
       <ProductGallery images={product.images} name={product.name} />
 

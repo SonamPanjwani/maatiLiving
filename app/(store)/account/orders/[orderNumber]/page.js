@@ -4,7 +4,7 @@ import { requireCustomerPage } from "@/src/lib/auth";
 import { ORDER_COLUMNS } from "@/src/lib/orders";
 import { createSupabaseServerClient } from "@/src/lib/supabase/server";
 
-export const metadata = { title: "Order — Maati Living", robots: { index: false } };
+export const metadata = { title: "Order", robots: { index: false } };
 
 export default async function AccountOrderPage({ params }) {
   const { user } = await requireCustomerPage(`/account/orders/${params.orderNumber}`);

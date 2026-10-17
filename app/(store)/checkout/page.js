@@ -5,7 +5,7 @@ import { isRazorpayConfigured, isRazorpayLive } from "@/src/lib/razorpay";
 import { isSupabaseAdminConfigured } from "@/src/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/src/lib/supabase/server";
 
-export const metadata = { title: "Checkout — Maati Living", robots: { index: false } };
+export const metadata = { title: "Checkout", robots: { index: false } };
 export const dynamic = "force-dynamic";
 
 // Signed-in customers get their profile and saved addresses pre-filled; guests get an empty form.

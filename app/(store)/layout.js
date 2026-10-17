@@ -6,7 +6,7 @@ import FloatingWhatsApp from "@/components/common/FloatingWhatsApp";
 export default function StoreLayout({ children }) {
   return <>
     <Navbar solid />
-    <main className="store-main">{children}</main>
+    <main id="content" className="store-main">{children}</main>
     <Footer />
     <FloatingWhatsApp />
   </>;
