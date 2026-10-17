@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { indianStates } from "@/src/config/shop";
 import { assertAdmin } from "@/src/lib/auth";
+import { ORDER_EMAIL_COLUMNS, sendShippedEmail } from "@/src/lib/email";
+import { isRazorpayConfigured, refundPayment } from "@/src/lib/razorpay";
 import { slugify } from "@/src/lib/slugify";
 import { createSupabaseServerClient } from "@/src/lib/supabase/server";
 
@@ -33,7 +36,7 @@ export async function signIn(_prevState, formData) {
     await supabase.auth.signOut();
     return { error: "This account doesn't have admin access." };
   }
-  redirect("/admin/products");
+  redirect("/admin");
 }
 
 export async function signOut() {
@@ -166,14 +169,135 @@ export async function deleteCategory(formData) {
 // ---------------------------------------------------------------------------
 
 const ADMIN_ORDER_STATUSES = ["paid", "shipped", "delivered", "cancelled"];
+const orderUrl = (id, params) => `/admin/orders/${id}?${new URLSearchParams(params)}`;
 
+function revalidateOrders() {
+  revalidatePath("/admin", "layout");
+  revalidatePath("/account", "layout");
+}
+
+// Status changes from the order page. Shipping records courier + tracking (and emails the customer);
+// cancelling can put the items back into stock.
 export async function updateOrderStatus(formData) {
   await assertAdmin();
   const id = text(formData, "id");
   const status = text(formData, "status");
-  if (!ADMIN_ORDER_STATUSES.includes(status)) redirect(`/admin/orders/${id}?error=${encodeURIComponent("Choose a valid status.")}`);
-  const { error } = await createSupabaseServerClient().from("orders").update({ status }).eq("id", id);
-  if (error) redirect(`/admin/orders/${id}?error=${encodeURIComponent(friendlyDbError(error))}`);
-  revalidatePath("/admin/orders");
-  redirect(`/admin/orders/${id}?saved=1`);
+  if (!ADMIN_ORDER_STATUSES.includes(status)) redirect(orderUrl(id, { error: "Choose a valid status." }));
+
+  const supabase = createSupabaseServerClient();
+  const { data: before } = await supabase.from("orders").select("status").eq("id", id).single();
+  if (!before || !["paid", "shipped", "delivered", "cancelled"].includes(before.status)) {
+    redirect(orderUrl(id, { error: "Only paid orders can change status." }));
+  }
+
+  const update = { status };
+  if (status === "shipped") {
+    update.tracking_courier = text(formData, "trackingCourier") || null;
+    update.tracking_number = text(formData, "trackingNumber") || null;
+    if (before.status !== "shipped") update.shipped_at = new Date().toISOString();
+  }
+  const { error } = await supabase.from("orders").update(update).eq("id", id);
+  if (error) redirect(orderUrl(id, { error: friendlyDbError(error) }));
+
+  if (status === "cancelled" && formData.get("restock") === "on") await supabase.rpc("admin_restock_order", { p_order_id: id });
+  if (status === "shipped" && before.status !== "shipped" && formData.get("notify") === "on") {
+    const { data: order } = await supabase.from("orders").select(ORDER_EMAIL_COLUMNS).eq("id", id).single();
+    if (order) await sendShippedEmail(order);
+  }
+
+  revalidateOrders();
+  redirect(orderUrl(id, { saved: "1" }));
+}
+
+// Full refund through Razorpay. Partial refunds: use the Razorpay dashboard.
+export async function refundOrder(formData) {
+  await assertAdmin();
+  const id = text(formData, "id");
+  const supabase = createSupabaseServerClient();
+  const { data: order } = await supabase.from("orders").select("id, order_number, status, total_paise, razorpay_payment_id, refund_id").eq("id", id).single();
+
+  if (!order) redirect("/admin/orders");
+  if (order.refund_id || order.status === "refunded") redirect(orderUrl(id, { error: "This order has already been refunded." }));
+  if (!order.razorpay_payment_id || !["paid", "shipped", "delivered", "cancelled"].includes(order.status)) {
+    redirect(orderUrl(id, { error: "Only paid orders can be refunded." }));
+  }
+  if (!isRazorpayConfigured) redirect(orderUrl(id, { error: "Razorpay keys aren't set up, so refunds can't be issued from here." }));
+
+  let refund;
+  try {
+    refund = await refundPayment({ paymentId: order.razorpay_payment_id, amountPaise: order.total_paise, notes: { order_number: order.order_number } });
+  } catch (cause) {
+    redirect(orderUrl(id, { error: cause.message }));
+  }
+
+  const { error } = await supabase.from("orders").update({
+    status: "refunded",
+    refund_id: refund.id,
+    refund_amount_paise: refund.amount ?? order.total_paise,
+    refunded_at: new Date().toISOString(),
+  }).eq("id", id);
+  // The money has moved even if this update fails, so say so plainly.
+  if (error) redirect(orderUrl(id, { error: `Refund ${refund.id} was issued, but the order couldn't be updated: ${error.message}` }));
+
+  if (formData.get("restock") === "on") await supabase.rpc("admin_restock_order", { p_order_id: id });
+  revalidateOrders();
+  redirect(orderUrl(id, { saved: "refunded" }));
+}
+
+export async function restockOrder(formData) {
+  await assertAdmin();
+  const id = text(formData, "id");
+  const { data, error } = await createSupabaseServerClient().rpc("admin_restock_order", { p_order_id: id });
+  if (error) redirect(orderUrl(id, { error: friendlyDbError(error) }));
+  revalidateOrders();
+  revalidateStorefront();
+  redirect(orderUrl(id, data ? { saved: "restocked" } : { error: "Items were already returned to stock." }));
+}
+
+// ---------------------------------------------------------------------------
+// Inventory
+// ---------------------------------------------------------------------------
+
+export async function updateStock(formData) {
+  await assertAdmin();
+  const stock = Number(text(formData, "stock"));
+  const back = text(formData, "back") || "/admin/inventory";
+  if (!Number.isInteger(stock) || stock < 0) redirect(`${back}${back.includes("?") ? "&" : "?"}error=${encodeURIComponent("Stock must be a whole number, 0 or more.")}`);
+  const { error } = await createSupabaseServerClient().from("products").update({ stock }).eq("id", text(formData, "id"));
+  if (error) redirect(`${back}${back.includes("?") ? "&" : "?"}error=${encodeURIComponent(friendlyDbError(error))}`);
+  revalidateStorefront();
+  redirect(back);
+}
+
+// ---------------------------------------------------------------------------
+// Settings
+// ---------------------------------------------------------------------------
+
+// Rupee input → paise integer; blank → null.
+function rupeesToPaise(value) {
+  const raw = String(value ?? "").trim();
+  if (raw === "") return null;
+  const rupees = Number(raw);
+  return Number.isFinite(rupees) && rupees >= 0 ? Math.round(rupees * 100) : NaN;
+}
+
+export async function saveShippingSettings(_prevState, formData) {
+  await assertAdmin();
+  const defaultPaise = rupeesToPaise(formData.get("defaultRupees"));
+  const freeOverPaise = rupeesToPaise(formData.get("freeOverRupees"));
+  if (defaultPaise == null || Number.isNaN(defaultPaise)) return { error: "Enter the standard delivery charge in rupees (0 for free)." };
+  if (Number.isNaN(freeOverPaise)) return { error: "Free delivery threshold must be a number in rupees, or blank." };
+
+  const byStatePaise = {};
+  for (const state of indianStates) {
+    const paise = rupeesToPaise(formData.get(`state:${state}`));
+    if (Number.isNaN(paise)) return { error: `The charge for ${state} must be a number in rupees, or blank.` };
+    if (paise != null) byStatePaise[state] = paise;
+  }
+
+  const { error } = await createSupabaseServerClient().from("settings")
+    .upsert({ key: "shipping", value: { defaultPaise, freeOverPaise, byStatePaise } });
+  if (error) return { error: friendlyDbError(error) };
+  revalidateStorefront();
+  return { saved: true };
 }

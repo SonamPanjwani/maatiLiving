@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminLoginPage({ searchParams }) {
   if (!isSupabaseConfigured) return <SetupNotice />;
-  if (await getCurrentAdmin()) redirect("/admin/products");
+  if (await getCurrentAdmin()) redirect("/admin");
 
   const initialError = searchParams?.error === "not-admin" ? "This account doesn't have admin access." : null;
   return <div className="admin-login">

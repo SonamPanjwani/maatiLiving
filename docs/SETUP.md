@@ -135,7 +135,7 @@ Without this, orders still work and show in /admin. With it, the customer gets a
 In the Razorpay dashboard switch to **Live Mode** → generate live keys → replace the two test keys (they start with `rzp_live_`). Set up the webhook again in Live Mode, since test and live webhooks are separate. The "Test mode" note on checkout disappears automatically.
 
 ### Delivery charges
-Delivery is charged by the customer's state. Set the real rates in `src/config/shop.js` (`shippingByStatePaise`, amounts in paise). Until then, every state uses the placeholder ₹99, with free delivery from ₹999.
+Delivery is charged by the customer's state. Set it in **/admin → Delivery** after running step 10.1.
 
 ## 9. Customer accounts (Phase 4)
 
@@ -164,6 +164,23 @@ Supabase's built-in email sender only allows a few emails per hour and is meant 
 ### 9.5 Try it
 `/account/signup` → create an account → open the link in your email → you land in **My account**. Orders you placed as a guest with the same email appear automatically.
 
+## 10. Admin operations (Phase 5)
+
+### 10.1 Tables
+**SQL Editor → New query**: paste all of `supabase/migrations/0004_admin_operations.sql` → **Run**.
+
+The migrations must run **in order**: 0001 → 0002 → 0003 → 0004. Each builds on the one before.
+
+### 10.2 What's in /admin now
+- **Dashboard:** revenue today / 7 days / 30 days, orders waiting to ship, low stock, recent orders, best sellers, and a daily revenue chart (hover a column, or "Show as table").
+- **Orders:** search by order number, name, email or phone; filter by dates; **Export CSV** (opens in Excel). On an order:
+  - **Shipped:** add the courier and tracking number. If emails are set up, the customer is told automatically, and the tracking shows on their order page.
+  - **Cancelled:** tick "return items to stock".
+  - **Refund full amount:** refunds through Razorpay, needs the Razorpay keys. Use the Razorpay dashboard for partial refunds.
+- **Inventory:** every product's stock on one page; change a number and press Save.
+- **Customers:** everyone who has paid, guests included, with orders and total spent.
+- **Delivery:** standard delivery charge, a free-delivery threshold, and a charge for any state that differs. Leave a state blank to use the standard charge.
+
 ## Troubleshooting
 
 | Problem | Fix |
@@ -174,4 +191,5 @@ Supabase's built-in email sender only allows a few emails per hour and is meant 
 | Upload widget says "Invalid signature" | API secret is wrong or belongs to a different Cloudinary account than the cloud name. |
 | Checkout says "Online payment isn't switched on yet" | One of `SUPABASE_SECRET_KEY`, `NEXT_PUBLIC_RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` is missing; restart dev server. |
 | "We couldn't start the payment" | Razorpay key/secret mismatch (test key with live secret, or a typo), or 0002 SQL not run. The terminal running `npm run dev` shows the exact error. |
+| Order pages or /admin show "column … does not exist" | A migration hasn't been run. Run 0001 → 0004 in order. |
 | Paid but order shows "Confirming payment" | The browser closed before confirming. The webhook (8.4) fixes this automatically once it's set up. |

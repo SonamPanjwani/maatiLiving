@@ -20,9 +20,10 @@ export function CartLineImage({ item }) {
 }
 
 // state: delivery state if known. Without it, delivery shows "calculated at checkout".
-export function CartTotals({ subtotal, state = null }) {
-  const shipping = shippingFor(subtotal, state);
-  const free = shopConfig.freeShippingOverPaise;
+// shipping: settings from the server (getShippingSettings), so display matches what's charged.
+export function CartTotals({ subtotal, state = null, shippingSettings }) {
+  const shipping = shippingFor(subtotal, state, shippingSettings);
+  const free = shippingSettings?.freeOverPaise;
   return <dl className="cart-totals">
     <div><dt>Subtotal</dt><dd>{formatPrice(subtotal)}</dd></div>
     <div><dt>Delivery</dt><dd>{shipping === null ? (state ? "—" : "Calculated at checkout") : shipping ? formatPrice(shipping) : "Free"}</dd></div>
@@ -31,7 +32,7 @@ export function CartTotals({ subtotal, state = null }) {
   </dl>;
 }
 
-export default function CartView() {
+export default function CartView({ shippingSettings }) {
   const { items, hydrated, subtotal, setQuantity, remove, replace } = useCart();
   const [notices, setNotices] = useState([]);
   const [checked, setChecked] = useState(false);
@@ -85,7 +86,7 @@ export default function CartView() {
 
       <aside className="cart-summary">
         <p className="eyebrow">SUMMARY</p>
-        <CartTotals subtotal={subtotal} />
+        <CartTotals subtotal={subtotal} shippingSettings={shippingSettings} />
         <Link className="button button-dark cart-checkout" href="/checkout">Checkout <ArrowUpRight size={16} /></Link>
         <Link className="text-link" href="/shop">Keep browsing</Link>
       </aside>

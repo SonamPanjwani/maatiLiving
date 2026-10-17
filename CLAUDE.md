@@ -27,7 +27,8 @@ app/
                        cart/, checkout/ (+ actions.js), orders/[orderNumber]/ (?t=access token),
                        account/ (login, signup, forgot/reset-password, orders, addresses, profile; actions.js)
   auth/callback        exchanges Supabase email-link codes for a session, then ?next= (sanitised)
-  admin/               /admin — login/, (panel)/ products + categories, actions.js (server actions)
+  admin/               /admin — login/, (panel)/: dashboard (page.js), orders (+ export/route.js CSV),
+                       products, categories, inventory, customers, settings (delivery); actions.js
   api/cloudinary/sign  signs admin photo uploads (admin-only)
   api/razorpay/webhook verifies Razorpay webhook signature, marks orders paid/failed
 middleware.js          /admin, /account, /checkout: refresh session; signed-out → /admin/login or /account/login?next=
@@ -43,26 +44,30 @@ components/
   common/              shared pieces: CloudImage (client wrapper for CldImage),
                        TextilePlaceholder, WhatsAppLink, FloatingWhatsApp
   admin/               AdminBar, LoginForm, ProductForm, CategoryForm, ImageManager (multi-photo
-                       upload/reorder/cover), SubmitButton, ConfirmSubmit, SetupNotice
+                       upload/reorder/cover), SubmitButton, ConfirmSubmit, SetupNotice,
+                       RevenueChart (client; dataviz rules: single madder series, hover+focus, table view),
+                       ShippingSettingsForm
 supabase/
   migrations/          SQL schema + RLS policies (run in Supabase SQL editor)
   seed.sql             starter categories/products
 src/
   config/site.js       brand + contact config (env-driven), getWhatsAppUrl()
   config/cloudinary.js Cloudinary config, isCloudinaryConfigured
-  config/shop.js       shipping rules (shippingFor), quantity limits, Indian states — shared client/server
+  config/shop.js       shippingFor(subtotal, state, settings), defaultShippingSettings, limits, Indian states
   data/categories.js   fallback categories, used when Supabase isn't configured
   data/products.js     fallback catalogue, used when Supabase isn't configured
   data/hero.js         hero slides (Cloudinary publicIds)
   lib/catalog.js       async storefront getters (Supabase or fallback) + row→shape mappers
-  lib/admin-catalog.js admin reads through the user session (includes hidden products)
+  lib/admin-catalog.js admin reads through the user session (hidden products, order search/export,
+                       customers grouped by email, dashboard aggregates in IST)
   lib/auth.js          getCurrentUser / getCurrentAdmin / requireAdminPage / assertAdmin /
                        requireCustomerPage / assertSignedIn / safeNextPath
   lib/supabase/        config, server (cookie) client, public (cookie-free) client, middleware helper
   lib/orders.js        server-only: quoteCart (re-prices from DB), validateCustomer, create/markPaid/lookup
   lib/razorpay.js      server-only: create order, verify payment + webhook signatures
   lib/email.js         server-only: optional Resend order emails (no-op without RESEND_API_KEY)
-  lib/order-status.js  STATUS_LABELS
+  lib/order-status.js  STATUS_LABELS, ORDER_TABS (admin list + CSV export)
+  lib/settings.js      getShippingSettings (public read of settings.shipping, falls back to defaults)
   lib/validation.js    clean, phone/email checks, validateAddress (shared by checkout + saved addresses)
   lib/supabase/admin.js server-only secret-key client (bypasses RLS) — checkout/payment/order lookup only
   lib/slugify.js
@@ -82,7 +87,9 @@ src/
 - **Payments:** never trust browser prices. `quoteCart` re-reads price/stock; `startCheckout` refuses if anything changed; orders are paid only via `markOrderPaid` (SQL `mark_order_paid`, idempotent, decrements stock once) after a verified Razorpay signature (checkout handler or webhook). `mark_order_paid` is executable by `service_role` only.
 - The secret-key client (`src/lib/supabase/admin.js`) is for guest checkout, payment confirmation, order lookups by access token and `claim_guest_orders` only; admin and account screens use the session client so RLS applies.
 - **Customer data:** account pages filter by `user_id = user.id` explicitly in addition to RLS (admins' RLS would otherwise see every order). Customers can update only `profiles.full_name`/`phone` (column-level grant) — never `role`. Post-login redirects go through `safeNextPath`.
-- Delivery is per state: `shippingFor(subtotal, state)` in `src/config/shop.js` (null when state unknown → "calculated at checkout"). Real per-state rates are still TODO.
+- Delivery is per state, edited in /admin → Delivery (`settings` row `shipping`: `{ defaultPaise, freeOverPaise, byStatePaise }`). Server components load it with `getShippingSettings()` and pass it to client components; `quoteCart` uses the same settings, so display and charge always agree.
+- Refunds: full only, via `refundPayment` (Razorpay API) in `refundOrder`. Restocking goes through SQL `admin_restock_order` (admin-only, once per order via `orders.restocked`).
+- CSV export neutralises cells starting with = + - @ (spreadsheet formula injection).
 - Secrets/env: `.env.local` (git-ignored). Document every new var in `.env.example`.
 
 ## Catalogue data model
@@ -125,7 +132,7 @@ Patterns: `.section` / `.section-grid` (two-column, 10vw padding), `.section-hea
 - **Phase 2 — Shop + product pages** ✅ — `/shop`, `/shop/[category]` (includes sub-categories), `/products/[slug]` with swipeable gallery, stock status, details, related products, per-product metadata/OG image. Static + revalidate 60s. Ordering is still "Enquire on WhatsApp" until Phase 3.
 - **Phase 3 — Cart + Razorpay checkout** ✅ (code) — localStorage cart, guest checkout with address, Razorpay Checkout + signature verification, webhook backstop, `orders`/`order_items` (`0002_orders.sql`), confirmation page by access token, optional Resend emails, basic `/admin/orders` (list by status, detail, mark shipped/delivered/cancelled). Needs Razorpay test keys + `SUPABASE_SECRET_KEY` to run (docs/SETUP.md §8).
 - **Phase 4 — Customer account** ✅ (code) — email/password sign-up with confirmation, password reset, `/account` order history (guest orders claimed by verified email), saved addresses (one default), profile; checkout pre-fills and can save addresses (`0003_customer_accounts.sql`, docs/SETUP.md §9).
-- **Phase 5 — Admin panel (rest)** — order search/export, refunds via Razorpay API, inventory adjustments, customers, dashboard, editable shipping settings.
+- **Phase 5 — Admin panel** ✅ (code) — dashboard (KPIs + 30-day revenue chart, to-ship, low stock, best sellers), order search/date filter/CSV export, shipping with courier + tracking (+ optional email), cancel/refund (Razorpay) with restock, inventory page, customers list, per-state delivery settings (`0004_admin_operations.sql`, docs/SETUP.md §10).
 - **Phase 6 — Launch** — SEO/metadata, sitemap, analytics, legal pages (privacy, terms, shipping/returns), performance and accessibility pass, deploy.
 
 Do not add auth, DB or payments ahead of their phase.

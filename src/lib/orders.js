@@ -1,13 +1,15 @@
 import "server-only";
 import { shippingFor, shopConfig } from "@/src/config/shop";
 import { getProductsByIds } from "./catalog";
+import { getShippingSettings } from "./settings";
 import { sendOrderEmails } from "./email";
 import { getSupabaseAdminClient, isSupabaseAdminConfigured } from "./supabase/admin";
 import { clean, isValidEmail, validateAddress } from "./validation";
 
 export const ORDER_COLUMNS = `id, order_number, access_token, status, customer_name, email, phone, address_line1, address_line2,
   city, state, pincode, notes, subtotal_paise, shipping_paise, total_paise, razorpay_order_id, razorpay_payment_id,
-  paid_at, created_at, order_items(product_name, product_slug, image_public_id, unit_price_paise, quantity)`;
+  paid_at, created_at, tracking_courier, tracking_number, shipped_at, refund_amount_paise, refunded_at,
+  order_items(product_name, product_slug, image_public_id, unit_price_paise, quantity)`;
 
 // Re-prices cart lines from the database. Never trusts browser prices.
 // Returns { lines, subtotal, shipping, total, notices } with quantities clamped to stock.
@@ -41,7 +43,7 @@ export async function quoteCart(rawLines, state = null) {
   }
 
   const subtotal = lines.reduce((sum, line) => sum + line.price * line.quantity, 0);
-  const shipping = shippingFor(subtotal, state);
+  const shipping = shippingFor(subtotal, state, await getShippingSettings());
   return { lines, subtotal, shipping, total: subtotal + (shipping ?? 0), notices };
 }
 

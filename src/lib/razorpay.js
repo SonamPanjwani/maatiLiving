@@ -31,6 +31,22 @@ export async function createRazorpayOrder({ amountPaise, receipt, notes }) {
   return body; // { id: "order_…", amount, currency, … }
 }
 
+// https://razorpay.com/docs/api/refunds/create-normal/ — returns { id: "rfnd_…", amount, status, … }
+export async function refundPayment({ paymentId, amountPaise, notes }) {
+  const response = await fetch(`https://api.razorpay.com/v1/payments/${encodeURIComponent(paymentId)}/refund`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString("base64")}`,
+    },
+    body: JSON.stringify({ amount: amountPaise, notes }),
+    cache: "no-store",
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(`Razorpay refund failed: ${body?.error?.description ?? response.status}`);
+  return body;
+}
+
 // Checkout handler signature: HMAC-SHA256(order_id + "|" + payment_id, key_secret).
 export function verifyPaymentSignature({ razorpayOrderId, razorpayPaymentId, razorpaySignature }) {
   if (!keySecret || !razorpayOrderId || !razorpayPaymentId) return false;

@@ -25,7 +25,7 @@ function loadRazorpay() {
 }
 
 // account: { email, name, phone, addresses[] } for a signed-in customer, else null (guest checkout).
-export default function CheckoutForm({ paymentsEnabled, testMode, account = null }) {
+export default function CheckoutForm({ paymentsEnabled, testMode, account = null, shippingSettings }) {
   const router = useRouter();
   const { items, hydrated, subtotal, replace, clear } = useCart();
   const [error, setError] = useState(null);
@@ -144,7 +144,7 @@ export default function CheckoutForm({ paymentsEnabled, testMode, account = null
       <ul className="checkout-items">
         {items.map((item) => <li key={item.productId}><span>{item.name} × {item.quantity}</span><span>{formatPrice(item.price * item.quantity)}</span></li>)}
       </ul>
-      <CartTotals subtotal={subtotal} state={state || null} />
+      <CartTotals subtotal={subtotal} state={state || null} shippingSettings={shippingSettings} />
       {error && <p className="admin-error" role="alert">{error}</p>}
       {paymentsEnabled
         ? <button type="submit" className="button button-dark cart-checkout" disabled={busy}><Lock size={14} /> {busy ? "Opening payment…" : "Pay securely"}</button>

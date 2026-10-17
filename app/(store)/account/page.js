@@ -19,7 +19,7 @@ export default async function AccountOrdersPage() {
   const { data: orders } = await createSupabaseServerClient().from("orders")
     .select("id, order_number, status, total_paise, created_at, order_items(quantity)")
     .eq("user_id", user.id) // explicit: admins' RLS would otherwise return every order
-    .in("status", ["paid", "shipped", "delivered", "cancelled"])
+    .in("status", ["paid", "shipped", "delivered", "cancelled", "refunded"])
     .order("created_at", { ascending: false });
 
   return <AccountShell active="/account" name={profile?.full_name} title={<>Your<br /><em>orders.</em></>}>

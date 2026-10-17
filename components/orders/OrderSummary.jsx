@@ -10,6 +10,7 @@ const HEADINGS = {
   pending: { eyebrow: "CONFIRMING PAYMENT", title: <>Just a<br /><em>moment.</em></>, copy: "We're waiting for the payment to be confirmed. Refresh this page in a minute — if money was taken, please don't pay again." },
   failed: { eyebrow: "PAYMENT NOT COMPLETED", title: <>The payment<br /><em>didn't go through.</em></>, copy: "No order was placed. Your cart is still saved, so you can try again." },
   cancelled: { eyebrow: "ORDER CANCELLED", title: <>This order<br /><em>was cancelled.</em></>, copy: "If you have questions, message us on WhatsApp." },
+  refunded: { eyebrow: "ORDER REFUNDED", title: <>Your refund<br /><em>is on its way.</em></>, copy: "We've refunded this order to your original payment method. Banks usually take 5–7 working days to show it." },
 };
 
 export function orderHeading(status) {
@@ -31,9 +32,14 @@ export default function OrderSummary({ order, backHref = "/shop", backLabel = "K
         <div><dt>Subtotal</dt><dd>{formatPrice(order.subtotal_paise)}</dd></div>
         <div><dt>Delivery</dt><dd>{order.shipping_paise ? formatPrice(order.shipping_paise) : "Free"}</dd></div>
         <div className="cart-total"><dt>{unpaid ? "Total" : "Total paid"}</dt><dd>{formatPrice(order.total_paise)}</dd></div>
+        {order.refund_amount_paise != null && <div><dt>Refunded</dt><dd>{formatPrice(order.refund_amount_paise)}</dd></div>}
       </dl>
     </div>
     <aside className="cart-summary">
+      {order.tracking_number && ["shipped", "delivered"].includes(order.status) && <div className="order-tracking">
+        <p className="eyebrow">TRACKING</p>
+        <p>{order.tracking_courier || "Courier"}<br /><strong>{order.tracking_number}</strong></p>
+      </div>}
       <p className="eyebrow">DELIVERING TO</p>
       <address className="order-address">
         {order.customer_name}<br />{order.address_line1}<br />{order.address_line2 && <>{order.address_line2}<br /></>}{order.city}, {order.state} {order.pincode}<br />{order.phone}
