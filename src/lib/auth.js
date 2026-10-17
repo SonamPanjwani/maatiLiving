@@ -8,8 +8,28 @@ export async function getCurrentUser() {
   const supabase = createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
-  const { data: profile } = await supabase.from("profiles").select("id, email, full_name, role").eq("id", user.id).single();
+  const { data: profile } = await supabase.from("profiles").select("id, email, full_name, phone, role").eq("id", user.id).single();
   return { user, profile };
+}
+
+// Only same-site paths are allowed as post-login destinations (blocks open redirects like //evil.com).
+export function safeNextPath(value, fallback = "/account") {
+  const path = String(value ?? "");
+  return path.startsWith("/") && !path.startsWith("//") && !path.startsWith("/\\") ? path : fallback;
+}
+
+// For customer account pages: any signed-in user (admins can shop too).
+export async function requireCustomerPage(next = "/account") {
+  const current = await getCurrentUser();
+  if (!current) redirect(`/account/login?next=${encodeURIComponent(next)}`);
+  return current;
+}
+
+// For customer server actions.
+export async function assertSignedIn() {
+  const current = await getCurrentUser();
+  if (!current) throw new Error("Please sign in again.");
+  return current;
 }
 
 export async function getCurrentAdmin() {

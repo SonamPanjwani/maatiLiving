@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowUpRight, Lock } from "lucide-react";
 import { confirmPayment, reportPaymentFailed, startCheckout } from "@/app/(store)/checkout/actions";
-import { indianStates } from "@/src/config/shop";
 import { siteConfig } from "@/src/config/site";
 import { formatPrice } from "@/src/lib/format";
+import AddressFields from "@/components/account/AddressFields";
 import { CartTotals } from "./CartView";
 import { useCart } from "./CartProvider";
 
@@ -24,11 +24,30 @@ function loadRazorpay() {
   });
 }
 
-export default function CheckoutForm({ paymentsEnabled, testMode }) {
+// account: { email, name, phone, addresses[] } for a signed-in customer, else null (guest checkout).
+export default function CheckoutForm({ paymentsEnabled, testMode, account = null }) {
   const router = useRouter();
   const { items, hydrated, subtotal, replace, clear } = useCart();
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const saved = account?.addresses ?? [];
+  const initial = saved.find((address) => address.is_default) ?? saved[0] ?? null;
+  const [addressId, setAddressId] = useState(initial?.id ?? "new");
+  const [state, setState] = useState(initial?.state ?? "");
+  const selected = saved.find((address) => address.id === addressId) ?? null;
+  // Contact defaults: the chosen saved address, else the profile.
+  const contact = selected ?? { name: account?.name ?? "", phone: account?.phone ?? "" };
+
+  // Name/phone stay as typed unless a saved address supplies them (email is never touched).
+  const nameRef = useRef(null);
+  const phoneRef = useRef(null);
+  const chooseAddress = (id) => {
+    const address = saved.find((item) => item.id === id);
+    setAddressId(id);
+    setState(address?.state ?? "");
+    if (address && nameRef.current) nameRef.current.value = address.name;
+    if (address && phoneRef.current) phoneRef.current.value = address.phone;
+  };
 
   if (!hydrated) return <p className="cart-loading">Loading…</p>;
   if (items.length === 0) {
@@ -87,28 +106,35 @@ export default function CheckoutForm({ paymentsEnabled, testMode }) {
 
   return <form className="checkout-layout" onSubmit={onSubmit}>
     <div className="checkout-fields">
+      {!account && <p className="checkout-signin">Continue as a guest, or <Link className="inline-link" href="/account/login?next=/checkout">sign in</Link> to use saved addresses and keep your order history.</p>}
+
+      {saved.length > 0 && <fieldset>
+        <legend className="eyebrow">DELIVER TO</legend>
+        <div className="saved-addresses">
+          {saved.map((address) => <label key={address.id} className={address.id === addressId ? "is-selected" : ""}>
+            <input type="radio" name="savedAddress" value={address.id} checked={address.id === addressId} onChange={() => chooseAddress(address.id)} />
+            <span><strong>{address.name}</strong> · {address.line1}, {address.city}, {address.state} {address.pincode}</span>
+          </label>)}
+          <label className={addressId === "new" ? "is-selected" : ""}>
+            <input type="radio" name="savedAddress" value="new" checked={addressId === "new"} onChange={() => chooseAddress("new")} />
+            <span>A new address</span>
+          </label>
+        </div>
+      </fieldset>}
+
       <fieldset>
         <legend className="eyebrow">CONTACT</legend>
-        <label className="field"><span>Full name</span><input name="name" autoComplete="name" required /></label>
         <div className="field-row">
-          <label className="field"><span>Email</span><input name="email" type="email" autoComplete="email" required /></label>
-          <label className="field"><span>Mobile</span><input name="phone" type="tel" inputMode="numeric" autoComplete="tel-national" placeholder="10-digit number" required /></label>
+          <label className="field"><span>Full name</span><input ref={nameRef} name="name" defaultValue={contact.name} autoComplete="name" required /></label>
+          <label className="field"><span>Mobile</span><input ref={phoneRef} name="phone" type="tel" inputMode="numeric" defaultValue={contact.phone} autoComplete="tel-national" placeholder="10-digit number" required /></label>
         </div>
+        <label className="field"><span>Email <small>for your order confirmation</small></span><input name="email" type="email" defaultValue={account?.email ?? ""} autoComplete="email" required /></label>
       </fieldset>
-      <fieldset>
+      {/* key remounts the address inputs with the chosen saved address as defaults */}
+      <fieldset key={`address-${addressId}`}>
         <legend className="eyebrow">DELIVERY ADDRESS</legend>
-        <label className="field"><span>House / flat, street</span><input name="addressLine1" autoComplete="address-line1" required /></label>
-        <label className="field"><span>Area, landmark <small>optional</small></span><input name="addressLine2" autoComplete="address-line2" /></label>
-        <div className="field-row">
-          <label className="field"><span>City</span><input name="city" autoComplete="address-level2" required /></label>
-          <label className="field"><span>PIN code</span><input name="pincode" inputMode="numeric" autoComplete="postal-code" maxLength={6} pattern="[1-9][0-9]{5}" required /></label>
-        </div>
-        <label className="field"><span>State</span>
-          <select name="state" autoComplete="address-level1" defaultValue="" required>
-            <option value="" disabled>Choose your state</option>
-            {indianStates.map((state) => <option key={state}>{state}</option>)}
-          </select>
-        </label>
+        <AddressFields address={selected ?? {}} includeContact={false} stateValue={state} onStateChange={setState} />
+        {account && addressId === "new" && <div className="field-checks"><label><input type="checkbox" name="saveAddress" defaultChecked /> Save this address to my account</label></div>}
         <label className="field"><span>Note for us <small>optional — gifting, delivery instructions</small></span><textarea name="notes" rows={2} /></label>
       </fieldset>
     </div>
@@ -118,7 +144,7 @@ export default function CheckoutForm({ paymentsEnabled, testMode }) {
       <ul className="checkout-items">
         {items.map((item) => <li key={item.productId}><span>{item.name} × {item.quantity}</span><span>{formatPrice(item.price * item.quantity)}</span></li>)}
       </ul>
-      <CartTotals subtotal={subtotal} />
+      <CartTotals subtotal={subtotal} state={state || null} />
       {error && <p className="admin-error" role="alert">{error}</p>}
       {paymentsEnabled
         ? <button type="submit" className="button button-dark cart-checkout" disabled={busy}><Lock size={14} /> {busy ? "Opening payment…" : "Pay securely"}</button>

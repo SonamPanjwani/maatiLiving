@@ -1,16 +1,18 @@
 import "server-only";
-import { indianStates, shippingFor, shopConfig } from "@/src/config/shop";
+import { shippingFor, shopConfig } from "@/src/config/shop";
 import { getProductsByIds } from "./catalog";
 import { sendOrderEmails } from "./email";
-import { getSupabaseAdminClient } from "./supabase/admin";
+import { getSupabaseAdminClient, isSupabaseAdminConfigured } from "./supabase/admin";
+import { clean, isValidEmail, validateAddress } from "./validation";
 
-const ORDER_COLUMNS = `id, order_number, access_token, status, customer_name, email, phone, address_line1, address_line2,
+export const ORDER_COLUMNS = `id, order_number, access_token, status, customer_name, email, phone, address_line1, address_line2,
   city, state, pincode, notes, subtotal_paise, shipping_paise, total_paise, razorpay_order_id, razorpay_payment_id,
   paid_at, created_at, order_items(product_name, product_slug, image_public_id, unit_price_paise, quantity)`;
 
 // Re-prices cart lines from the database. Never trusts browser prices.
 // Returns { lines, subtotal, shipping, total, notices } with quantities clamped to stock.
-export async function quoteCart(rawLines) {
+// Delivery depends on the state; without one, shipping is null (not yet known) and total excludes it.
+export async function quoteCart(rawLines, state = null) {
   const requested = (Array.isArray(rawLines) ? rawLines : [])
     .slice(0, shopConfig.maxLinesPerOrder)
     .map((line) => ({ productId: String(line?.productId ?? ""), quantity: Math.floor(Number(line?.quantity)) }))
@@ -39,39 +41,38 @@ export async function quoteCart(rawLines) {
   }
 
   const subtotal = lines.reduce((sum, line) => sum + line.price * line.quantity, 0);
-  const shipping = shippingFor(subtotal);
-  return { lines, subtotal, shipping, total: subtotal + shipping, notices };
+  const shipping = shippingFor(subtotal, state);
+  return { lines, subtotal, shipping, total: subtotal + (shipping ?? 0), notices };
 }
 
-const clean = (value, max = 200) => String(value ?? "").trim().replace(/\s+/g, " ").slice(0, max);
-
-// Returns { customer } or { error }.
+// Returns { customer } (orders column names) or { error }.
 export function validateCustomer(input) {
-  const customer = {
-    customer_name: clean(input?.name, 120),
-    email: clean(input?.email, 160).toLowerCase(),
-    phone: clean(input?.phone, 20).replace(/[\s-]/g, "").replace(/^(\+?91)(?=\d{10}$)/, ""),
-    address_line1: clean(input?.addressLine1),
-    address_line2: clean(input?.addressLine2) || null,
-    city: clean(input?.city, 80),
-    state: clean(input?.state, 80),
-    pincode: clean(input?.pincode, 6),
-    notes: clean(input?.notes, 500) || null,
+  const email = clean(input?.email, 160).toLowerCase();
+  if (!isValidEmail(email)) return { error: "Please enter a valid email address." };
+  const { address, error } = validateAddress(input);
+  if (error) return { error };
+  return {
+    customer: {
+      customer_name: address.name,
+      email,
+      phone: address.phone,
+      address_line1: address.line1,
+      address_line2: address.line2,
+      city: address.city,
+      state: address.state,
+      pincode: address.pincode,
+      notes: clean(input?.notes, 500) || null,
+    },
+    address,
   };
-  if (customer.customer_name.length < 2) return { error: "Please enter your full name." };
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) return { error: "Please enter a valid email address." };
-  if (!/^[6-9]\d{9}$/.test(customer.phone)) return { error: "Please enter a 10-digit Indian mobile number." };
-  if (customer.address_line1.length < 3) return { error: "Please enter your street address." };
-  if (customer.city.length < 2) return { error: "Please enter your city." };
-  if (!indianStates.includes(customer.state)) return { error: "Please choose your state." };
-  if (!/^[1-9]\d{5}$/.test(customer.pincode)) return { error: "Please enter a 6-digit PIN code." };
-  return { customer };
 }
 
-export async function createPendingOrder(customer, quote) {
+// userId: the signed-in customer (from the server session), or null for guest checkout.
+export async function createPendingOrder(customer, quote, userId = null) {
   const supabase = getSupabaseAdminClient();
   const { data: order, error } = await supabase.from("orders").insert({
     ...customer,
+    user_id: userId,
     subtotal_paise: quote.subtotal,
     shipping_paise: quote.shipping,
     total_paise: quote.total,
@@ -122,4 +123,12 @@ export async function getOrderForCustomer(orderNumber, accessToken) {
   const { data } = await getSupabaseAdminClient().from("orders").select(ORDER_COLUMNS)
     .eq("order_number", orderNumber).eq("access_token", accessToken).maybeSingle();
   return data;
+}
+
+// Links guest orders placed with this email to the account. Only call for a verified email.
+export async function claimGuestOrders(user) {
+  if (!isSupabaseAdminConfigured || !user?.email || !user.email_confirmed_at) return 0;
+  const { data, error } = await getSupabaseAdminClient().rpc("claim_guest_orders", { p_user_id: user.id, p_email: user.email });
+  if (error) { console.error("claim_guest_orders:", error.message); return 0; }
+  return data ?? 0;
 }

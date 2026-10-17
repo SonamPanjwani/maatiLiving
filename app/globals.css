@@ -1540,7 +1540,8 @@ a.product-image-wrap {
 
 @media (max-width: 700px) {
   .store-main { padding-top: 64px; }
-  .section-heading h1 { font-size: clamp(3rem, 15vw, 5rem); margin-bottom: 3rem; }
+  .section-heading h1,
+  .auth-page h1 { font-size: clamp(3rem, 15vw, 5rem); margin-bottom: 3rem; }
   .category-nav ul { gap: .9rem 1.6rem; }
   .product-detail { display: block; padding: 0 0 18vw; }
   .gallery-arrow { display: none; }
@@ -1906,4 +1907,275 @@ a.product-image-wrap {
   .cart-summary { position: static; padding: 1.5rem; }
   .cart-line { grid-template-columns: 72px 1fr; gap: 1rem; }
   .cart-line-end { grid-column: 2; flex-direction: row; justify-content: space-between; align-items: center; }
+}
+
+/* ==========================================================================
+   19. Customer account (sign in, orders, addresses, profile)
+   ========================================================================== */
+
+.auth-page {
+  align-items: start;
+}
+
+.auth-page h1 {
+  font-size: clamp(3rem, 5.4vw, 6rem);
+}
+
+.auth-intro {
+  max-width: 380px;
+  margin: 2rem 0 0;
+}
+
+.auth-panel {
+  background: var(--cotton-2);
+  padding: 2.5rem;
+}
+
+.account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  max-width: 440px;
+}
+
+.account-form-wide {
+  max-width: 640px;
+}
+
+.account-form .button {
+  align-self: flex-start;
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.account-form .button:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
+.account-form-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 2rem;
+  margin: .4rem 0 0;
+  font-size: 13px;
+}
+
+.account-sent p {
+  margin: 0 0 1rem;
+}
+
+.account-sent p:first-child {
+  font: 400 1.4rem/1.35 Fraunces, serif;
+}
+
+.account-layout {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 5vw;
+  align-items: start;
+}
+
+.account-nav {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--line);
+}
+
+.account-nav a,
+.account-nav button {
+  display: block;
+  padding: .9rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  text-align: left;
+  width: 100%;
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--charcoal);
+  cursor: pointer;
+}
+
+.account-nav a:hover,
+.account-nav button:hover,
+.account-nav a.is-active {
+  color: var(--madder);
+}
+
+.account-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.account-panel {
+  background: var(--cotton-2);
+  padding: 2rem;
+}
+
+.account-orders {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+
+.account-orders a {
+  display: grid;
+  grid-template-columns: 1fr 1fr .7fr .8fr 1.1fr;
+  gap: 1rem;
+  align-items: center;
+  padding: 1.2rem 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.account-orders a:hover .account-order-number {
+  color: var(--madder);
+}
+
+.account-order-number {
+  font: 400 1.2rem Fraunces, serif;
+}
+
+.account-order-status {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  text-align: right;
+}
+
+.address-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.address-list li {
+  border: 1px solid var(--line);
+  padding: 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.address-list li.is-editing {
+  border-color: var(--charcoal);
+}
+
+.address-default {
+  align-self: flex-start;
+  background: var(--charcoal);
+  color: var(--cotton);
+  font-size: 9px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+}
+
+.address-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-top: auto;
+}
+
+/* .text-link on a <button> (form actions styled as links) */
+button.text-link {
+  background: none;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  padding: 0 0 4px;
+  font: inherit;
+  font-size: 10px;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* Plain underlined link inside running text */
+.inline-link {
+  color: var(--madder);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Contrast on cotton-2 panels: messages and panel labels in charcoal (madder border still flags errors). */
+.auth-panel .admin-error,
+.account-panel .admin-error,
+.cart-summary .admin-error,
+.account-content .admin-error {
+  color: var(--charcoal);
+}
+
+.account-panel .eyebrow,
+.auth-panel .eyebrow,
+.checkout-fields legend.eyebrow {
+  color: var(--charcoal);
+}
+
+.account-panel h2.eyebrow {
+  font-family: 'Work Sans', sans-serif;
+  line-height: 1.6;
+}
+
+.field input[readonly] {
+  background: transparent;
+  color: #665e54;
+}
+
+/* Checkout additions for signed-in customers */
+
+.checkout-signin {
+  margin: 0;
+  padding: 1rem 1.2rem;
+  background: var(--cotton-2);
+  font-size: 13px;
+}
+
+.saved-addresses {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+}
+
+.saved-addresses label {
+  display: flex;
+  align-items: flex-start;
+  gap: .8rem;
+  padding: 1rem 1.2rem;
+  border: 1px solid var(--line);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.saved-addresses label.is-selected {
+  border-color: var(--charcoal);
+  background: rgba(255,255,255,.35);
+}
+
+.saved-addresses input {
+  accent-color: var(--madder);
+  margin-top: 3px;
+}
+
+@media (max-width: 700px) {
+  .auth-panel,
+  .account-panel { padding: 1.5rem; }
+  .account-layout { grid-template-columns: 1fr; gap: 2rem; }
+  .account-nav { flex-direction: row; flex-wrap: wrap; gap: 0 1.4rem; border-top: 0; }
+  .account-nav a,
+  .account-nav button { width: auto; border-bottom: 0; padding: .9rem 0; min-height: 44px; }
+  .auth-panel { margin-top: 2.5rem; }
+  .account-orders a { grid-template-columns: 1fr 1fr; gap: .4rem 1rem; }
+  .account-order-status { text-align: left; }
 }

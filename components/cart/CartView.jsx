@@ -19,14 +19,15 @@ export function CartLineImage({ item }) {
   </Link>;
 }
 
-export function CartTotals({ subtotal }) {
-  const shipping = shippingFor(subtotal);
-  const toFree = shopConfig.freeShippingOverPaise - subtotal;
+// state: delivery state if known. Without it, delivery shows "calculated at checkout".
+export function CartTotals({ subtotal, state = null }) {
+  const shipping = shippingFor(subtotal, state);
+  const free = shopConfig.freeShippingOverPaise;
   return <dl className="cart-totals">
     <div><dt>Subtotal</dt><dd>{formatPrice(subtotal)}</dd></div>
-    <div><dt>Delivery</dt><dd>{shipping ? formatPrice(shipping) : "Free"}</dd></div>
-    {shipping > 0 && <p className="cart-free-note">Add {formatPrice(toFree)} more for free delivery.</p>}
-    <div className="cart-total"><dt>Total</dt><dd>{formatPrice(subtotal + shipping)}</dd></div>
+    <div><dt>Delivery</dt><dd>{shipping === null ? (state ? "—" : "Calculated at checkout") : shipping ? formatPrice(shipping) : "Free"}</dd></div>
+    {free != null && shipping !== 0 && <p className="cart-free-note">Free delivery on orders from {formatPrice(free)}.</p>}
+    <div className="cart-total"><dt>{shipping === null ? "Total before delivery" : "Total"}</dt><dd>{formatPrice(subtotal + (shipping ?? 0))}</dd></div>
   </dl>;
 }
 

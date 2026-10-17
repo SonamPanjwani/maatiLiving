@@ -134,8 +134,35 @@ Without this, orders still work and show in /admin. With it, the customer gets a
 ### 8.6 Going live (after KYC)
 In the Razorpay dashboard switch to **Live Mode** → generate live keys → replace the two test keys (they start with `rzp_live_`). Set up the webhook again in Live Mode, since test and live webhooks are separate. The "Test mode" note on checkout disappears automatically.
 
-### Shipping charges
-Currently ₹99 delivery, free from ₹999. To change it, edit `src/config/shop.js`.
+### Delivery charges
+Delivery is charged by the customer's state. Set the real rates in `src/config/shop.js` (`shippingByStatePaise`, amounts in paise). Until then, every state uses the placeholder ₹99, with free delivery from ₹999.
+
+## 9. Customer accounts (Phase 4)
+
+### 9.1 Accounts tables
+**SQL Editor → New query**: paste all of `supabase/migrations/0003_customer_accounts.sql` → **Run**.
+
+### 9.2 Allow sign-ups again
+You turned sign-ups off in step 3. Customers need them now:
+
+**Authentication → Sign In / Providers** → turn **on** "Allow new users to sign up", and keep **"Confirm email"** on.
+
+Admins are still made only by the SQL in step 4, so a new sign-up is always a customer.
+
+### 9.3 Redirect URLs
+Confirmation and password-reset emails link back to the site. Supabase only allows addresses you list.
+
+**Authentication → URL Configuration**:
+- **Site URL:** `http://localhost:3000` for now (change to your real domain at launch)
+- **Redirect URLs:** add `http://localhost:3000/auth/callback`, and later `https://<your-domain>/auth/callback`
+
+### 9.4 Email sending (before launch)
+Supabase's built-in email sender only allows a few emails per hour and is meant for testing. Before launch, use your own sender:
+
+**Authentication → Emails → SMTP Settings** → enable custom SMTP. Resend works here too: host `smtp.resend.com`, port `465`, user `resend`, password = your Resend API key. You can also edit the email templates there to match the Maati voice.
+
+### 9.5 Try it
+`/account/signup` → create an account → open the link in your email → you land in **My account**. Orders you placed as a guest with the same email appear automatically.
 
 ## Troubleshooting
 
