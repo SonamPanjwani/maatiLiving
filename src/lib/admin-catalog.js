@@ -27,14 +27,15 @@ export async function adminCountProductsByCategory() {
   return rows.reduce((counts, row) => ({ ...counts, [row.category_id]: (counts[row.category_id] ?? 0) + 1 }), {});
 }
 
-const ORDER_LIST_COLUMNS = "id, order_number, status, customer_name, email, phone, city, state, total_paise, created_at, paid_at, order_items(quantity)";
+const ORDER_LIST_COLUMNS = "id, order_number, status, payment_method, payment_reference, customer_name, email, phone, city, state, total_paise, created_at, paid_at, order_items(quantity)";
 export const SALE_STATUSES = ["paid", "shipped", "delivered"]; // money kept (not cancelled/refunded)
 
 const isDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value ?? ""));
 
 // Shared filters for the orders list and CSV export. Dates are IST calendar days.
-function applyOrderFilters(query, { statuses, q, from, to }) {
+function applyOrderFilters(query, { statuses, paymentMethod, q, from, to }) {
   if (statuses?.length) query = query.in("status", statuses);
+  if (paymentMethod) query = query.eq("payment_method", paymentMethod);
   if (isDate(from)) query = query.gte("created_at", `${from}T00:00:00+05:30`);
   if (isDate(to)) query = query.lte("created_at", `${to}T23:59:59.999+05:30`);
   // Strip characters that have meaning in PostgREST filter syntax before building the OR search.
@@ -92,12 +93,13 @@ const istDay = (date) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolk
 export async function adminGetDashboard({ lowStockAt = 5 } = {}) {
   const supabase = createSupabaseServerClient();
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const [orders, toShip, lowStock, recent] = await Promise.all([
+  const [orders, toShip, upiToVerify, lowStock, recent] = await Promise.all([
     supabase.from("orders").select("total_paise, paid_at, order_items(product_name, product_slug, quantity, unit_price_paise)")
       .in("status", SALE_STATUSES).gte("paid_at", since).then(unwrap),
     supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "paid").then(({ count }) => count ?? 0),
+    supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending").eq("payment_method", "upi_manual").not("payment_reference", "is", null).then(({ count }) => count ?? 0),
     supabase.from("products").select("id, name, stock, is_available").lte("stock", lowStockAt).order("stock").limit(12).then(unwrap),
-    supabase.from("orders").select("id, order_number, status, customer_name, total_paise, created_at")
+    supabase.from("orders").select("id, order_number, status, payment_method, payment_reference, customer_name, total_paise, created_at")
       .in("status", [...SALE_STATUSES, "cancelled", "refunded"]).order("created_at", { ascending: false }).limit(8).then(unwrap),
   ]);
 
@@ -127,6 +129,7 @@ export async function adminGetDashboard({ lowStockAt = 5 } = {}) {
     month: sum(0),
     days,
     toShip,
+    upiToVerify,
     lowStock,
     recent,
     bestSellers: [...products.values()].sort((a, b) => b.quantity - a.quantity).slice(0, 5),

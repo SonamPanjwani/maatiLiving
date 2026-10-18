@@ -1,8 +1,7 @@
 import CheckoutForm from "@/components/cart/CheckoutForm";
 import { getCurrentUser } from "@/src/lib/auth";
 import { getShippingSettings } from "@/src/lib/settings";
-import { isRazorpayConfigured, isRazorpayLive } from "@/src/lib/razorpay";
-import { isSupabaseAdminConfigured } from "@/src/lib/supabase/admin";
+import { getPaymentMode, isPaymentTestMode } from "@/src/lib/payment-mode";
 import { createSupabaseServerClient } from "@/src/lib/supabase/server";
 
 export const metadata = { title: "Checkout", robots: { index: false } };
@@ -20,10 +19,9 @@ async function loadAccount() {
 }
 
 export default async function CheckoutPage() {
-  const paymentsEnabled = isRazorpayConfigured && isSupabaseAdminConfigured;
   const [account, shippingSettings] = await Promise.all([loadAccount(), getShippingSettings()]);
   return <section className="checkout section">
     <div className="section-heading"><div><p className="eyebrow">CHECKOUT</p><h1>Where should<br /><em>we send it?</em></h1></div></div>
-    <CheckoutForm paymentsEnabled={paymentsEnabled} testMode={paymentsEnabled && !isRazorpayLive} account={account} shippingSettings={shippingSettings} />
+    <CheckoutForm paymentMode={getPaymentMode()} testMode={isPaymentTestMode()} account={account} shippingSettings={shippingSettings} />
   </section>;
 }

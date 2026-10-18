@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminExportOrders } from "@/src/lib/admin-catalog";
 import { getCurrentAdmin } from "@/src/lib/auth";
-import { ORDER_TABS, STATUS_LABELS } from "@/src/lib/order-status";
+import { ORDER_TABS, adminStatusLabel } from "@/src/lib/order-status";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +19,8 @@ const COLUMNS = [
   ["Order", (o) => o.order_number],
   ["Placed (IST)", (o) => ist(o.created_at)],
   ["Paid (IST)", (o) => ist(o.paid_at)],
-  ["Status", (o) => STATUS_LABELS[o.status] ?? o.status],
+  ["Status", (o) => adminStatusLabel(o)],
+  ["Payment", (o) => (o.payment_method === "upi_manual" ? "UPI (direct)" : "Razorpay")],
   ["Customer", (o) => o.customer_name],
   ["Email", (o) => o.email],
   ["Phone", (o) => o.phone],
@@ -34,7 +35,7 @@ const COLUMNS = [
   ["Refunded (₹)", (o) => rupees(o.refund_amount_paise)],
   ["Courier", (o) => o.tracking_courier],
   ["Tracking no.", (o) => o.tracking_number],
-  ["Razorpay payment", (o) => o.razorpay_payment_id],
+  ["Payment ref", (o) => o.razorpay_payment_id || o.payment_reference],
   ["Note", (o) => o.notes],
 ];
 
@@ -43,7 +44,7 @@ export async function GET(request) {
 
   const params = new URL(request.url).searchParams;
   const tab = ORDER_TABS.find((item) => item.key === params.get("tab")) ?? ORDER_TABS.find((item) => item.key === "all");
-  const orders = await adminExportOrders({ statuses: tab.statuses, q: params.get("q"), from: params.get("from"), to: params.get("to") });
+  const orders = await adminExportOrders({ statuses: tab.statuses, paymentMethod: tab.paymentMethod, q: params.get("q"), from: params.get("from"), to: params.get("to") });
 
   const lines = [COLUMNS.map(([title]) => cell(title)).join(","), ...orders.map((order) => COLUMNS.map(([, get]) => cell(get(order))).join(","))];
   const stamp = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());

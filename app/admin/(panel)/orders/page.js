@@ -1,7 +1,7 @@
 import { Download } from "lucide-react";
 import { adminGetOrders } from "@/src/lib/admin-catalog";
 import { formatPrice } from "@/src/lib/format";
-import { ORDER_TABS, STATUS_LABELS } from "@/src/lib/order-status";
+import { ORDER_TABS, adminStatusLabel } from "@/src/lib/order-status";
 
 const dateFormat = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
 
@@ -9,7 +9,7 @@ export default async function AdminOrdersPage({ searchParams }) {
   const searching = Boolean(searchParams?.q || searchParams?.from || searchParams?.to);
   // A search looks across every paid order unless a tab was picked explicitly.
   const tab = ORDER_TABS.find((item) => item.key === searchParams?.tab) ?? (searching ? ORDER_TABS[4] : ORDER_TABS[0]);
-  const filters = { statuses: tab.statuses, q: searchParams?.q, from: searchParams?.from, to: searchParams?.to };
+  const filters = { statuses: tab.statuses, paymentMethod: tab.paymentMethod, q: searchParams?.q, from: searchParams?.from, to: searchParams?.to };
   const orders = await adminGetOrders(filters);
   const exportQuery = new URLSearchParams(Object.entries({ tab: tab.key, q: filters.q, from: filters.from, to: filters.to }).filter(([, value]) => value)).toString();
 
@@ -46,7 +46,7 @@ export default async function AdminOrdersPage({ searchParams }) {
               <td>{order.customer_name}<small>{order.city}, {order.state}</small></td>
               <td className="num">{order.order_items.reduce((sum, item) => sum + item.quantity, 0)}</td>
               <td className="num">{formatPrice(order.total_paise)}</td>
-              <td className={order.status === "paid" ? "admin-warn" : ""}>{STATUS_LABELS[order.status]}</td>
+              <td className={order.status === "paid" || order.payment_reference && order.status === "pending" ? "admin-warn" : ""}>{adminStatusLabel(order)}</td>
             </tr>)}
           </tbody>
         </table>}

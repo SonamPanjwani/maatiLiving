@@ -13,13 +13,21 @@ const HEADINGS = {
   refunded: { eyebrow: "ORDER REFUNDED", title: <>Your refund<br /><em>is on its way.</em></>, copy: "We've refunded this order to your original payment method. Banks usually take 5–7 working days to show it." },
 };
 
-export function orderHeading(status) {
-  return HEADINGS[status] ?? HEADINGS.pending;
+const UPI_HEADINGS = {
+  awaiting: { eyebrow: "ORDER PLACED · PAYMENT DUE", title: <>Order placed.<br /><em>Now, the payment.</em></>, copy: "Pay by UPI below. We'll confirm your order and start packing as soon as your payment reaches us." },
+  checking: { eyebrow: "CHECKING PAYMENT", title: <>Thank you.<br /><em>We're checking it.</em></>, copy: "We've got your transaction ID and will confirm your order shortly, usually within a few hours." },
+};
+
+// Heading for an order page; direct-UPI orders waiting for payment get their own wording.
+export function orderHeading(order) {
+  if (order.status === "pending" && order.payment_method === "upi_manual") return order.payment_reference ? UPI_HEADINGS.checking : UPI_HEADINGS.awaiting;
+  return HEADINGS[order.status] ?? HEADINGS.pending;
 }
 
 // Items, totals and delivery address for one order (customer-facing).
 export default function OrderSummary({ order, backHref = "/shop", backLabel = "Keep browsing" }) {
   const unpaid = order.status === "failed" || order.status === "pending";
+  const isUpi = order.payment_method === "upi_manual";
   return <div className="cart-layout">
     <div>
       <ul className="checkout-items order-items">
@@ -31,7 +39,7 @@ export default function OrderSummary({ order, backHref = "/shop", backLabel = "K
       <dl className="cart-totals">
         <div><dt>Subtotal</dt><dd>{formatPrice(order.subtotal_paise)}</dd></div>
         <div><dt>Delivery</dt><dd>{order.shipping_paise ? formatPrice(order.shipping_paise) : "Free"}</dd></div>
-        <div className="cart-total"><dt>{unpaid ? "Total" : "Total paid"}</dt><dd>{formatPrice(order.total_paise)}</dd></div>
+        <div className="cart-total"><dt>{unpaid ? (isUpi ? "To pay" : "Total") : "Total paid"}</dt><dd>{formatPrice(order.total_paise)}</dd></div>
         {order.refund_amount_paise != null && <div><dt>Refunded</dt><dd>{formatPrice(order.refund_amount_paise)}</dd></div>}
       </dl>
     </div>

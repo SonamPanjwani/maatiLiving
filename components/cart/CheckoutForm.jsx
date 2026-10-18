@@ -3,8 +3,9 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, Lock } from "lucide-react";
-import { confirmPayment, reportPaymentFailed, startCheckout } from "@/app/(store)/checkout/actions";
+import { ArrowUpRight, Lock, MessageCircle } from "lucide-react";
+import { confirmPayment, placeUpiOrder, reportPaymentFailed, startCheckout } from "@/app/(store)/checkout/actions";
+import { shippingFor } from "@/src/config/shop";
 import { siteConfig } from "@/src/config/site";
 import { formatPrice } from "@/src/lib/format";
 import AddressFields from "@/components/account/AddressFields";
@@ -24,8 +25,28 @@ function loadRazorpay() {
   });
 }
 
+// The whole order as a WhatsApp message, for when online payment isn't set up yet.
+function whatsappOrderUrl(form, items, subtotal, shipping) {
+  const lines = [
+    "Hi Maati Living, I'd like to order:",
+    ...items.map((item) => `• ${item.name} × ${item.quantity} = ${formatPrice(item.price * item.quantity)}`),
+    `Subtotal: ${formatPrice(subtotal)}`,
+    `Delivery: ${shipping == null ? "please confirm" : shipping ? formatPrice(shipping) : "Free"}`,
+    `Total: ${formatPrice(subtotal + (shipping ?? 0))}`,
+    "",
+    `Name: ${form.name}`,
+    `Phone: ${form.phone}`,
+    `Email: ${form.email}`,
+    `Address: ${[form.addressLine1, form.addressLine2, form.city, form.state, form.pincode].filter(Boolean).join(", ")}`,
+    form.notes ? `Note: ${form.notes}` : "",
+  ].filter((line, index, all) => line || all[index - 1]);
+  return `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(lines.join("\n"))}`;
+}
+
+// paymentMode: "razorpay" (pay online now), "upi" (order saved, pay by UPI on the next page),
+// "whatsapp" (order sent to the shop's WhatsApp). Decided on the server from what's configured.
 // account: { email, name, phone, addresses[] } for a signed-in customer, else null (guest checkout).
-export default function CheckoutForm({ paymentsEnabled, testMode, account = null, shippingSettings }) {
+export default function CheckoutForm({ paymentMode, testMode, account = null, shippingSettings }) {
   const router = useRouter();
   const { items, hydrated, subtotal, replace, clear } = useCart();
   const [error, setError] = useState(null);
@@ -57,9 +78,27 @@ export default function CheckoutForm({ paymentsEnabled, testMode, account = null
   const onSubmit = async (event) => {
     event.preventDefault();
     setError(null);
-    setBusy(true);
     const form = Object.fromEntries(new FormData(event.currentTarget));
     const lines = items.map(({ productId, quantity, price }) => ({ productId, quantity, price }));
+
+    if (paymentMode === "whatsapp") {
+      window.open(whatsappOrderUrl(form, items, subtotal, shippingFor(subtotal, form.state, shippingSettings)), "_blank", "noopener");
+      return;
+    }
+
+    setBusy(true);
+    if (paymentMode === "upi") {
+      const placed = await placeUpiOrder({ lines, customer: form }).catch(() => ({ error: "Something went wrong. Please try again." }));
+      if (placed.ok) {
+        clear();
+        router.push(placed.url);
+        return;
+      }
+      if (placed.quote) replace(placed.quote.lines);
+      setError(placed.error);
+      setBusy(false);
+      return;
+    }
 
     const started = await startCheckout({ lines, customer: form }).catch(() => ({ error: "Something went wrong. Please try again." }));
     if (started.error) {
@@ -146,11 +185,19 @@ export default function CheckoutForm({ paymentsEnabled, testMode, account = null
       </ul>
       <CartTotals subtotal={subtotal} state={state || null} shippingSettings={shippingSettings} />
       {error && <p className="admin-error" role="alert">{error}</p>}
-      {paymentsEnabled
-        ? <button type="submit" className="button button-dark cart-checkout" disabled={busy}><Lock size={14} /> {busy ? "Opening payment…" : "Pay securely"}</button>
-        : <p className="checkout-disabled">Online payment isn't switched on yet. Please order through <a className="text-link" href={`https://wa.me/${siteConfig.whatsappNumber}`} target="_blank" rel="noreferrer">WhatsApp</a> for now.</p>}
-      {testMode && <p className="checkout-test">Test mode — no real money is charged.</p>}
-      <p className="checkout-secure">Payments by Razorpay: UPI, cards, netbanking and wallets.</p>
+      {paymentMode === "razorpay" && <>
+        <button type="submit" className="button button-dark cart-checkout" disabled={busy}><Lock size={14} /> {busy ? "Opening payment…" : "Pay securely"}</button>
+        {testMode && <p className="checkout-test">Test mode — no real money is charged.</p>}
+        <p className="checkout-secure">Payments by Razorpay: UPI (PhonePe, Google Pay, Paytm), cards, netbanking and wallets.</p>
+      </>}
+      {paymentMode === "upi" && <>
+        <button type="submit" className="button button-dark cart-checkout" disabled={busy}>{busy ? "Placing order…" : "Place order & pay by UPI"}</button>
+        <p className="checkout-secure">Next, you'll see our UPI ID and QR code. Pay with PhonePe, Google Pay, Paytm or any UPI app. We confirm your order once the payment reaches us.</p>
+      </>}
+      {paymentMode === "whatsapp" && <>
+        <button type="submit" className="button button-dark cart-checkout"><MessageCircle size={14} /> Send order on WhatsApp</button>
+        <p className="checkout-secure">Your order opens in WhatsApp, ready to send. We'll reply with payment details and confirm your order.</p>
+      </>}
       <Link className="text-link" href="/cart">Back to cart</Link>
     </aside>
   </form>;

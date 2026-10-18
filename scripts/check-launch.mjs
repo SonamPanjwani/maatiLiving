@@ -47,13 +47,25 @@ for (const key of Object.keys(env)) {
 if (!has("NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME") || !has("NEXT_PUBLIC_CLOUDINARY_API_KEY") || !has("CLOUDINARY_API_SECRET")) block("Cloudinary cloud name / API key / API secret incomplete.");
 else ok("Cloudinary keys");
 
+// Payments: Razorpay if configured, else direct UPI (confirmed by hand), else orders by WhatsApp.
 const rzpId = env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? "";
-if (!rzpId || !has("RAZORPAY_KEY_SECRET")) block("Razorpay key id / secret missing.");
-else if (rzpId.startsWith("rzp_test_")) block("Razorpay is still in TEST mode (rzp_test_…). Switch to live keys after KYC.");
-else if (rzpId.startsWith("rzp_live_")) ok("Razorpay live keys");
-else warn("Razorpay key id has an unexpected format.");
-if (!has("RAZORPAY_WEBHOOK_SECRET")) block("RAZORPAY_WEBHOOK_SECRET missing — set up the webhook (docs/DEPLOY.md).");
-else ok("Razorpay webhook secret");
+const upiId = env.NEXT_PUBLIC_UPI_ID ?? "";
+const upiValid = /^[a-zA-Z0-9._-]{2,256}@[a-zA-Z][a-zA-Z0-9]{1,64}$/.test(upiId);
+if (rzpId || has("RAZORPAY_KEY_SECRET")) {
+  if (!rzpId || !has("RAZORPAY_KEY_SECRET")) block("Razorpay key id / secret: only one of the pair is set.");
+  else if (rzpId.startsWith("rzp_test_")) block("Razorpay is still in TEST mode (rzp_test_…). Switch to live keys after KYC.");
+  else if (rzpId.startsWith("rzp_live_")) ok("Payments: Razorpay live");
+  else warn("Razorpay key id has an unexpected format.");
+  if (!has("RAZORPAY_WEBHOOK_SECRET")) block("RAZORPAY_WEBHOOK_SECRET missing — set up the webhook (docs/DEPLOY.md).");
+  else ok("Razorpay webhook secret");
+} else if (upiId && !upiValid) {
+  block(`NEXT_PUBLIC_UPI_ID doesn't look like a UPI ID (expected name@bank).`);
+} else if (upiValid) {
+  ok(`Payments: direct UPI to ${upiId} (you confirm each payment in /admin → Orders → UPI to verify)`);
+  warn("Razorpay not set up yet — payments are checked by hand. Add Razorpay keys after KYC to automate.");
+} else {
+  warn("No online payment yet: checkout sends orders to your WhatsApp. Add NEXT_PUBLIC_UPI_ID or Razorpay keys to take payments on the site.");
+}
 
 if (!/^91[6-9]\d{9}$/.test(env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "")) block("NEXT_PUBLIC_WHATSAPP_NUMBER must be 91 + 10-digit mobile (e.g. 919876543210).");
 else ok("WhatsApp number");
@@ -105,9 +117,11 @@ if (has("NEXT_PUBLIC_SUPABASE_URL") && secretKey) {
       if (status !== 200) { block(`Table "${table}" not reachable (HTTP ${status}) — run migration ${migration}.`); schemaOk = false; }
     }
     if (schemaOk) {
-      ok("All migrations applied (0001–0004)");
+      ok("Core tables present (0001–0004)");
       const columns = await rest("orders?select=tracking_number&limit=1");
       if (columns.status !== 200) block("orders.tracking_number missing — run 0004_admin_operations.sql.");
+      const upiColumns = await rest("orders?select=payment_method&limit=1");
+      if (upiColumns.status !== 200) block("orders.payment_method missing — run 0005_manual_upi.sql.");
 
       const admins = await rest("profiles?select=email&role=eq.admin");
       if (!admins.body?.length) block("No admin account — see docs/SETUP.md step 4.");

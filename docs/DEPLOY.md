@@ -4,7 +4,7 @@ The order to do things in. Allow an afternoon, plus Razorpay KYC time, which can
 
 ## 0. Before deploying (local)
 
-1. Everything in [SETUP.md](SETUP.md) is done: migrations 0001–0004, an admin account, the keys in `.env.local`, and test payments working.
+1. Everything in [SETUP.md](SETUP.md) is done: migrations 0001–0005, an admin account, and the keys in `.env.local`. You can launch **before Razorpay**: with a UPI ID (SETUP §11) customers pay by UPI and you confirm payments in admin, or with neither, orders arrive on WhatsApp.
 2. Fill in **`src/config/business.js`**: legal name, address, grievance officer, policy dates and details, and the founders' names and bios. Read the four policy pages (`/shipping-policy`, `/returns`, `/terms`, `/privacy`). They are sensible drafts, **not legal advice**. Have a CA or lawyer look over them, especially the GST position and the returns rules.
 3. Add your real categories and products with photos in `/admin`, and delete the sample ones.
 4. Set delivery charges in **/admin → Delivery**.
@@ -46,7 +46,7 @@ Every `git push` to `main` redeploys automatically.
 - Redirect URLs: add `https://<your-domain>/auth/callback` (keep the localhost one for development)
 - **Authentication → Emails → SMTP Settings:** custom SMTP turned on (SETUP.md §9.4)
 
-**Razorpay (Live Mode)**
+**Razorpay (Live Mode)**, once KYC and bank details are done. Skip this until then.
 - **Account & Settings → Webhooks → Add:** URL `https://<your-domain>/api/razorpay/webhook`, events `payment.captured`, `order.paid`, `payment.failed`, secret = your `RAZORPAY_WEBHOOK_SECRET`
 - Business website in your Razorpay profile = `https://<your-domain>`. The policy and contact pages are what KYC reviewers look for.
 

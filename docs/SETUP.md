@@ -181,6 +181,35 @@ The migrations must run **in order**: 0001 → 0002 → 0003 → 0004. Each buil
 - **Customers:** everyone who has paid, guests included, with orders and total spent.
 - **Delivery:** standard delivery charge, a free-delivery threshold, and a charge for any state that differs. Leave a state blank to use the standard charge.
 
+## 11. Taking payments before Razorpay is ready
+
+Checkout picks how to take payment automatically, from what's in `.env.local`:
+
+| You have set up | Checkout does |
+|---|---|
+| Razorpay keys + `SUPABASE_SECRET_KEY` | **Pay securely** with Razorpay: cards, UPI (PhonePe/GPay/Paytm), netbanking. Fully automatic. |
+| `NEXT_PUBLIC_UPI_ID` + `SUPABASE_SECRET_KEY` (no Razorpay) | **Place order & pay by UPI**: the order is saved, the customer sees your UPI ID, QR code and a "Pay with UPI app" button, pays, and enters the transaction ID. You confirm it in admin. |
+| Neither | **Send order on WhatsApp**: the whole order (items, total, address) opens in WhatsApp, ready to send to you. |
+
+### 11.1 Direct UPI setup
+1. Run `supabase/migrations/0005_manual_upi.sql` in the SQL Editor (after 0004).
+2. Find your UPI ID in PhonePe / Google Pay / Paytm / your bank app (looks like `name@ybl`, `name@okhdfcbank`). A **business** UPI ID (PhonePe Business, Paytm for Business, Google Pay for Business) is best: it's free, made for receiving customer payments, and shows your shop name.
+3. Add to `.env.local`, then restart:
+   ```
+   NEXT_PUBLIC_UPI_ID=yourname@ybl
+   NEXT_PUBLIC_UPI_PAYEE_NAME=Maati Living
+   ```
+   (`SUPABASE_SECRET_KEY` must be set too, see 8.2.)
+
+### 11.2 Every day: confirming UPI payments
+- The dashboard shows "N UPI payments to check" when customers have entered a transaction ID.
+- **/admin → Orders → UPI to verify** → open the order → check in your bank/UPI app that the **exact amount** arrived with that transaction ID → **Confirm payment received**. The order moves to *To ship*, stock goes down, and the customer gets the confirmation email (if emails are on).
+- **Never confirm before you see the money.** A transaction ID typed by a customer is not proof of payment.
+- If a payment never arrives, open the order → **Cancel order**. Stock is untouched, because it only goes down when you confirm.
+- Refunds for UPI orders: send the money back from your UPI app or bank, then set the order to Cancelled (and tick "return items to stock").
+
+When Razorpay is approved, add its keys. Checkout switches to Razorpay on its own, and existing UPI orders stay in admin as they are.
+
 ## Troubleshooting
 
 | Problem | Fix |

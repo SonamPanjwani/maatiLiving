@@ -1,27 +1,29 @@
 import { notFound } from "next/navigation";
-import { refundOrder, restockOrder, updateOrderStatus } from "@/app/admin/actions";
+import { cancelUnpaidOrder, confirmManualPayment, refundOrder, restockOrder, updateOrderStatus } from "@/app/admin/actions";
 import ConfirmSubmit from "@/components/admin/ConfirmSubmit";
 import SubmitButton from "@/components/admin/SubmitButton";
 import { adminGetOrder } from "@/src/lib/admin-catalog";
 import { isEmailConfigured } from "@/src/lib/email";
 import { formatPrice } from "@/src/lib/format";
-import { STATUS_LABELS } from "@/src/lib/order-status";
+import { STATUS_LABELS, adminStatusLabel } from "@/src/lib/order-status";
 
 const dateFormat = new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
 const EDITABLE_STATUSES = ["paid", "shipped", "delivered", "cancelled"];
-const SAVED_MESSAGES = { 1: "Order updated.", refunded: "Refund issued through Razorpay.", restocked: "Items returned to stock." };
+const SAVED_MESSAGES = { 1: "Order updated.", refunded: "Refund issued through Razorpay.", restocked: "Items returned to stock.", "upi-confirmed": "Payment confirmed. The order is ready to ship." };
 
 export default async function AdminOrderPage({ params, searchParams }) {
   const order = await adminGetOrder(params.id);
   if (!order) notFound();
   const editable = EDITABLE_STATUSES.includes(order.status);
   const refundable = editable && order.razorpay_payment_id && !order.refund_id;
-  const canRestock = ["cancelled", "refunded"].includes(order.status) && !order.restocked;
+  const canRestock = ["cancelled", "refunded"].includes(order.status) && !order.restocked && Boolean(order.paid_at);
+  const upiPending = order.payment_method === "upi_manual" && order.status === "pending";
+  const upiPaid = order.payment_method === "upi_manual" && editable;
   const when = (value) => (value ? dateFormat.format(new Date(value)) : null);
 
   return <>
     <div className="admin-heading">
-      <div><p className="eyebrow">ORDER · {STATUS_LABELS[order.status]}</p><h1>{order.order_number}</h1></div>
+      <div><p className="eyebrow">ORDER · {adminStatusLabel(order)}</p><h1>{order.order_number}</h1></div>
       <a className="text-link" href="/admin/orders">All orders</a>
     </div>
     {searchParams?.saved && <p className="admin-success" role="status">{SAVED_MESSAGES[searchParams.saved] ?? "Saved."}</p>}
@@ -55,6 +57,23 @@ export default async function AdminOrderPage({ params, searchParams }) {
       </div>
 
       <aside className="admin-panel">
+        {upiPending && <div className="upi-verify">
+          <h2 className="eyebrow">UPI PAYMENT TO CHECK</h2>
+          <p className="upi-verify-amount">{formatPrice(order.total_paise)}</p>
+          {order.payment_reference
+            ? <p className="admin-note">Customer says they paid. Transaction ID: <strong className="upi-ref">{order.payment_reference}</strong>{order.payment_submitted_at && <> · {when(order.payment_submitted_at)}</>}</p>
+            : <p className="admin-note">The customer hasn't entered a transaction ID yet. They may still send a screenshot on WhatsApp.</p>}
+          <p className="admin-note"><strong>Open your own bank or UPI app</strong> (not the customer's screenshot) and find a payment of exactly {formatPrice(order.total_paise)}{order.payment_reference ? " with this transaction ID" : ""}. Fake screenshots and made-up transaction IDs are common. Only confirm once you've seen the money yourself.</p>
+          <form action={confirmManualPayment}>
+            <input type="hidden" name="id" value={order.id} />
+            <ConfirmSubmit className="button button-dark" message={`Have you seen ${formatPrice(order.total_paise)} from this customer in your own bank/UPI app history? A screenshot or transaction ID alone isn't proof. Confirming marks ${order.order_number} paid and takes the items out of stock.`}>Confirm payment received</ConfirmSubmit>
+          </form>
+          <form action={cancelUnpaidOrder}>
+            <input type="hidden" name="id" value={order.id} />
+            <ConfirmSubmit className="admin-danger" message={`Cancel unpaid order ${order.order_number}?`}>Cancel order</ConfirmSubmit>
+          </form>
+        </div>}
+
         <h2 className="eyebrow">SHIP TO</h2>
         <address className="order-address">
           {order.customer_name}<br />{order.address_line1}<br />{order.address_line2 && <>{order.address_line2}<br /></>}{order.city}, {order.state} {order.pincode}
@@ -79,9 +98,11 @@ export default async function AdminOrderPage({ params, searchParams }) {
               <SubmitButton>Update order</SubmitButton>
               <p className="admin-note">Cancelling doesn't refund the customer. Use Refund below.</p>
             </form>
-          : order.status === "pending" || order.status === "failed"
+          : (order.status === "pending" || order.status === "failed") && !upiPending
             ? <p className="admin-note">This order hasn't been paid, so there's nothing to ship.</p>
             : null}
+
+        {upiPaid && <p className="admin-note order-refund">Paid by direct UPI{order.payment_reference && <> (ref {order.payment_reference})</>}. To refund, send the money back from your UPI app or bank, then set the status to Cancelled and tick "return items to stock".</p>}
 
         {refundable && <form action={refundOrder} className="admin-form order-refund">
           <input type="hidden" name="id" value={order.id} />

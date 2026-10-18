@@ -43,7 +43,8 @@ components/
   cart/                CartProvider (context + localStorage, wraps app in root layout), CartButton,
                        AddToCart, CartView, CheckoutForm (opens Razorpay Checkout; saved-address picker)
   account/             AuthForms, AuthPage, AccountShell, ProfileForm, AddressForm, AddressFields (shared w/ checkout)
-  orders/              OrderSummary (customer-facing order detail, used by token page + account)
+  orders/              OrderSummary (customer-facing order detail, used by token page + account),
+                       UpiPaymentPanel (server: amount, UPI ID, intent link, QR via `qrcode`), UpiReferenceForm
   legal/               LegalPage (policy frame + draft notice), V (renders TODO values highlighted), BusinessAddress
 scripts/check-launch.mjs  `npm run check:launch`: env, business TODOs, live DB (migrations, admin, products, delivery)
 docs/                  SETUP.md (accounts/keys/migrations), DEPLOY.md (GitHub → Vercel → domain → live checklist)
@@ -74,7 +75,9 @@ src/
   lib/orders.js        server-only: quoteCart (re-prices from DB), validateCustomer, create/markPaid/lookup
   lib/razorpay.js      server-only: create order, verify payment + webhook signatures
   lib/email.js         server-only: optional Resend order emails (no-op without RESEND_API_KEY)
-  lib/order-status.js  STATUS_LABELS, ORDER_TABS (admin list + CSV export)
+  lib/order-status.js  STATUS_LABELS, adminStatusLabel(order), ORDER_TABS (admin list + CSV export)
+  lib/payment-mode.js  server-only getPaymentMode(): razorpay | upi | whatsapp
+  config/payments.js   upiConfig (NEXT_PUBLIC_UPI_ID / _PAYEE_NAME), isUpiConfigured, upiPayUrl()
   lib/settings.js      getShippingSettings (public read of settings.shipping, falls back to defaults)
   lib/validation.js    clean, phone/email checks, validateAddress (shared by checkout + saved addresses)
   lib/supabase/admin.js server-only secret-key client (bypasses RLS) — checkout/payment/order lookup only
@@ -96,7 +99,8 @@ src/
 - The secret-key client (`src/lib/supabase/admin.js`) is for guest checkout, payment confirmation, order lookups by access token and `claim_guest_orders` only; admin and account screens use the session client so RLS applies.
 - **Customer data:** account pages filter by `user_id = user.id` explicitly in addition to RLS (admins' RLS would otherwise see every order). Customers can update only `profiles.full_name`/`phone` (column-level grant) — never `role`. Post-login redirects go through `safeNextPath`.
 - Delivery is per state, edited in /admin → Delivery (`settings` row `shipping`: `{ defaultPaise, freeOverPaise, byStatePaise }`). Server components load it with `getShippingSettings()` and pass it to client components; `quoteCart` uses the same settings, so display and charge always agree.
-- Refunds: full only, via `refundPayment` (Razorpay API) in `refundOrder`. Restocking goes through SQL `admin_restock_order` (admin-only, once per order via `orders.restocked`).
+- **Payment modes** (`getPaymentMode()` in `src/lib/payment-mode.js`, decided by config): `razorpay` (keys + secret key) → `upi` (`NEXT_PUBLIC_UPI_ID` + secret key: order saved as `payment_method = 'upi_manual'`, customer pays via UPI intent/QR on the order page and submits a UTR, admin confirms with SQL `admin_confirm_manual_payment` which marks paid + decrements stock once) → `whatsapp` (checkout opens a prefilled WhatsApp order; nothing saved). A customer-entered UTR is never proof of payment: only the admin confirms.
+- Refunds: full only, via `refundPayment` (Razorpay API) in `refundOrder`; direct-UPI orders are refunded outside the site. Restocking goes through SQL `admin_restock_order` (admin-only, once per order via `orders.restocked`).
 - CSV export neutralises cells starting with = + - @ (spreadsheet formula injection).
 - Secrets/env: `.env.local` (git-ignored). Document every new var in `.env.example`.
 
@@ -141,6 +145,7 @@ Patterns: `.section` / `.section-grid` (two-column, 10vw padding), `.section-hea
 - **Phase 3 — Cart + Razorpay checkout** ✅ (code) — localStorage cart, guest checkout with address, Razorpay Checkout + signature verification, webhook backstop, `orders`/`order_items` (`0002_orders.sql`), confirmation page by access token, optional Resend emails, basic `/admin/orders` (list by status, detail, mark shipped/delivered/cancelled). Needs Razorpay test keys + `SUPABASE_SECRET_KEY` to run (docs/SETUP.md §8).
 - **Phase 4 — Customer account** ✅ (code) — email/password sign-up with confirmation, password reset, `/account` order history (guest orders claimed by verified email), saved addresses (one default), profile; checkout pre-fills and can save addresses (`0003_customer_accounts.sql`, docs/SETUP.md §9).
 - **Phase 5 — Admin panel** ✅ (code) — dashboard (KPIs + 30-day revenue chart, to-ship, low stock, best sellers), order search/date filter/CSV export, shipping with courier + tracking (+ optional email), cancel/refund (Razorpay) with restock, inventory page, customers list, per-state delivery settings (`0004_admin_operations.sql`, docs/SETUP.md §10).
+- **Direct UPI / WhatsApp ordering** ✅ (code) — launch before Razorpay KYC: manual-confirm UPI payments or WhatsApp orders (`0005_manual_upi.sql`, docs/SETUP.md §11).
 - **Phase 6 — Launch** ✅ (code) — policy pages + contact + about (from `business.js`), sitemap/robots, canonical + OG per page, Product/Organization JSON-LD, branded 404/error, self-hosted fonts, security headers, skip link, `check:launch`, docs/DEPLOY.md. Remaining: fill `business.js`, real content, keys, deploy.
 
 Do not add auth, DB or payments ahead of their phase.

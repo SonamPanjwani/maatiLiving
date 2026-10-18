@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { indianStates } from "@/src/config/shop";
 import { assertAdmin } from "@/src/lib/auth";
-import { ORDER_EMAIL_COLUMNS, sendShippedEmail } from "@/src/lib/email";
+import { ORDER_EMAIL_COLUMNS, sendOrderEmails, sendShippedEmail } from "@/src/lib/email";
 import { isRazorpayConfigured, refundPayment } from "@/src/lib/razorpay";
 import { slugify } from "@/src/lib/slugify";
 import { createSupabaseServerClient } from "@/src/lib/supabase/server";
@@ -242,6 +242,35 @@ export async function refundOrder(formData) {
   if (formData.get("restock") === "on") await supabase.rpc("admin_restock_order", { p_order_id: id });
   revalidateOrders();
   redirect(orderUrl(id, { saved: "refunded" }));
+}
+
+// Direct-UPI order: the admin has checked the money arrived (bank/UPI app) and confirms it.
+// SQL marks it paid and takes the items out of stock, exactly once; then the customer is emailed.
+export async function confirmManualPayment(formData) {
+  await assertAdmin();
+  const id = text(formData, "id");
+  const supabase = createSupabaseServerClient();
+  const { data: confirmed, error } = await supabase.rpc("admin_confirm_manual_payment", { p_order_id: id });
+  if (error) redirect(orderUrl(id, { error: friendlyDbError(error) }));
+  if (!confirmed) redirect(orderUrl(id, { error: "This order was already confirmed, or isn't an unpaid UPI order." }));
+
+  const { data: order } = await supabase.from("orders").select(ORDER_EMAIL_COLUMNS).eq("id", id).single();
+  if (order) await sendOrderEmails(order);
+  revalidateOrders();
+  revalidateStorefront();
+  redirect(orderUrl(id, { saved: "upi-confirmed" }));
+}
+
+// Unpaid order (e.g. UPI never arrived): cancel it. Nothing to restock — stock only moves on payment.
+export async function cancelUnpaidOrder(formData) {
+  await assertAdmin();
+  const id = text(formData, "id");
+  const { data, error } = await createSupabaseServerClient().from("orders")
+    .update({ status: "cancelled" }).eq("id", id).eq("status", "pending").select("id");
+  if (error) redirect(orderUrl(id, { error: friendlyDbError(error) }));
+  if (!data?.length) redirect(orderUrl(id, { error: "Only unpaid orders can be cancelled this way." }));
+  revalidateOrders();
+  redirect(orderUrl(id, { saved: "1" }));
 }
 
 export async function restockOrder(formData) {

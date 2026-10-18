@@ -9,6 +9,7 @@ import { clean, isValidEmail, validateAddress } from "./validation";
 export const ORDER_COLUMNS = `id, order_number, access_token, status, customer_name, email, phone, address_line1, address_line2,
   city, state, pincode, notes, subtotal_paise, shipping_paise, total_paise, razorpay_order_id, razorpay_payment_id,
   paid_at, created_at, tracking_courier, tracking_number, shipped_at, refund_amount_paise, refunded_at,
+  payment_method, payment_reference, payment_submitted_at,
   order_items(product_name, product_slug, image_public_id, unit_price_paise, quantity)`;
 
 // Re-prices cart lines from the database. Never trusts browser prices.
@@ -70,11 +71,13 @@ export function validateCustomer(input) {
 }
 
 // userId: the signed-in customer (from the server session), or null for guest checkout.
-export async function createPendingOrder(customer, quote, userId = null) {
+// paymentMethod: "razorpay" (automatic) or "upi_manual" (admin confirms the payment by hand).
+export async function createPendingOrder(customer, quote, userId = null, paymentMethod = "razorpay") {
   const supabase = getSupabaseAdminClient();
   const { data: order, error } = await supabase.from("orders").insert({
     ...customer,
     user_id: userId,
+    payment_method: paymentMethod,
     subtotal_paise: quote.subtotal,
     shipping_paise: quote.shipping,
     total_paise: quote.total,
@@ -125,6 +128,19 @@ export async function getOrderForCustomer(orderNumber, accessToken) {
   const { data } = await getSupabaseAdminClient().from("orders").select(ORDER_COLUMNS)
     .eq("order_number", orderNumber).eq("access_token", accessToken).maybeSingle();
   return data;
+}
+
+// Saves the UPI transaction id a customer entered for their unpaid direct-UPI order.
+// Only unpaid upi_manual orders, and only with the matching secret access token. Returns true if saved.
+export async function submitUpiReference(orderNumber, accessToken, reference) {
+  if (!/^[0-9a-f-]{36}$/i.test(String(accessToken ?? ""))) return false;
+  const { data, error } = await getSupabaseAdminClient().from("orders")
+    .update({ payment_reference: reference, payment_submitted_at: new Date().toISOString() })
+    .eq("order_number", orderNumber).eq("access_token", accessToken)
+    .eq("payment_method", "upi_manual").eq("status", "pending")
+    .select("id");
+  if (error) console.error("submitUpiReference:", error.message);
+  return Boolean(data?.length);
 }
 
 // Links guest orders placed with this email to the account. Only call for a verified email.

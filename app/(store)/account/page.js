@@ -9,7 +9,7 @@ import { createSupabaseServerClient } from "@/src/lib/supabase/server";
 
 export const metadata = { title: "My orders", robots: { index: false } };
 
-const CUSTOMER_STATUS = { ...STATUS_LABELS, paid: "Being prepared" };
+const CUSTOMER_STATUS = { ...STATUS_LABELS, paid: "Being prepared", pending: "Payment due / being checked" };
 const itemCount = (order) => order.order_items.reduce((sum, item) => sum + item.quantity, 0);
 const dateFormat = new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeZone: "Asia/Kolkata" });
 
@@ -17,9 +17,10 @@ export default async function AccountOrdersPage() {
   const { user, profile } = await requireCustomerPage("/account");
   await claimGuestOrders(user); // earlier guest orders with this verified email
   const { data: orders } = await createSupabaseServerClient().from("orders")
-    .select("id, order_number, status, total_paise, created_at, order_items(quantity)")
+    .select("id, order_number, status, payment_method, total_paise, created_at, order_items(quantity)")
     .eq("user_id", user.id) // explicit: admins' RLS would otherwise return every order
-    .in("status", ["paid", "shipped", "delivered", "cancelled", "refunded"])
+    // Paid-onwards orders, plus direct-UPI orders still waiting for their payment to be confirmed.
+    .or("status.in.(paid,shipped,delivered,cancelled,refunded),and(status.eq.pending,payment_method.eq.upi_manual)")
     .order("created_at", { ascending: false });
 
   return <AccountShell active="/account" name={profile?.full_name} title={<>Your<br /><em>orders.</em></>}>

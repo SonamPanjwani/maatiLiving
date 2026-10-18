@@ -1,7 +1,7 @@
 import RevenueChart from "@/components/admin/RevenueChart";
 import { adminGetDashboard } from "@/src/lib/admin-catalog";
 import { formatPrice } from "@/src/lib/format";
-import { STATUS_LABELS } from "@/src/lib/order-status";
+import { adminStatusLabel } from "@/src/lib/order-status";
 
 const LOW_STOCK_AT = 5;
 const dateFormat = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
@@ -12,6 +12,8 @@ export default async function AdminDashboard() {
 
   return <>
     <div className="admin-heading"><div><p className="eyebrow">OVERVIEW</p><h1>Dashboard</h1></div></div>
+
+    {data.upiToVerify > 0 && <a className="upi-banner" href="/admin/orders?tab=upi">{data.upiToVerify} UPI {data.upiToVerify === 1 ? "payment" : "payments"} waiting for you to check in your bank app. Open →</a>}
 
     <section className="kpi-row" aria-label="Key figures">
       <div className="kpi kpi-hero">
@@ -35,7 +37,7 @@ export default async function AdminDashboard() {
             <td><a href={`/admin/orders/${order.id}`}><strong>{order.order_number}</strong></a><small>{dateFormat.format(new Date(order.created_at))}</small></td>
             <td>{order.customer_name}</td>
             <td className="num">{formatPrice(order.total_paise)}</td>
-            <td className={order.status === "paid" ? "admin-warn" : ""}>{STATUS_LABELS[order.status]}</td>
+            <td className={order.status === "paid" ? "admin-warn" : ""}>{adminStatusLabel(order)}</td>
           </tr>)}</tbody>
         </table>}
       </section>

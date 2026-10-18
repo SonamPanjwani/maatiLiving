@@ -2204,7 +2204,8 @@ button.text-link {
   color: var(--charcoal);
 }
 
-h2.eyebrow {
+h2.eyebrow,
+h3.eyebrow {
   font-family: var(--font-work-sans), sans-serif;
   line-height: 1.6;
 }
@@ -2834,4 +2835,154 @@ h2.eyebrow {
   .contact-grid { margin-bottom: 3rem; }
   .about-hero h1 { font-size: clamp(3rem, 15vw, 5rem); }
   .footer-links { gap: 2.5rem 3rem; }
+}
+
+/* ==========================================================================
+   22. Direct UPI payments (customer pay panel, admin verification)
+   ========================================================================== */
+
+.upi-panel {
+  display: grid;
+  grid-template-columns: 1.2fr .8fr;
+  gap: 2rem 4vw;
+  background: var(--cotton-2);
+  padding: 2.4rem;
+  margin-bottom: 3rem;
+}
+
+.upi-panel .eyebrow {
+  color: var(--charcoal);
+}
+
+.upi-amount {
+  font: 600 2.8rem/1.1 var(--font-work-sans), sans-serif;
+  margin: 0;
+}
+
+.upi-to {
+  margin: .3rem 0 1.4rem;
+}
+
+.upi-id {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  margin-bottom: 1.4rem;
+}
+
+.upi-id code {
+  font: 600 1.1rem var(--font-work-sans), sans-serif;
+  background: var(--cotton);
+  padding: 8px 12px;
+  word-break: break-all;
+}
+
+.upi-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid rgba(42,38,34,.25);
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  cursor: pointer;
+  color: var(--charcoal);
+}
+
+.upi-copy:hover {
+  border-color: var(--madder);
+  color: var(--madder);
+}
+
+.upi-app-button {
+  margin-bottom: .8rem;
+}
+
+.upi-panel-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.upi-qr {
+  width: 200px;
+  height: 200px;
+  background: var(--cotton);
+  padding: 10px;
+}
+
+.upi-qr svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.upi-panel-confirm {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--line);
+  padding-top: 1.6rem;
+}
+
+.upi-ref-form .button {
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.upi-verify {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .8rem;
+  padding-bottom: 1.6rem;
+  margin-bottom: 1.6rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.upi-verify-amount {
+  font: 600 1.8rem var(--font-work-sans), sans-serif;
+  margin: 0;
+}
+
+.upi-ref {
+  font-size: 14px;
+  letter-spacing: .04em;
+}
+
+/* Needs-attention, not "done": turmeric edge, charcoal text, madder on hover/focus. */
+.upi-banner {
+  display: block;
+  margin: 0 0 1.5rem;
+  padding: 12px 16px;
+  background: color-mix(in srgb, var(--turmeric) 16%, transparent);
+  border-left: 3px solid var(--turmeric);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--charcoal);
+}
+
+.upi-banner:hover,
+.upi-banner:focus-visible {
+  color: var(--madder);
+  text-decoration: underline;
+}
+
+.upi-panel .admin-error {
+  color: var(--charcoal);
+}
+
+/* A upi:// link only works on phones; laptops use the QR code instead. */
+@media (min-width: 701px) {
+  .upi-app-button,
+  .upi-app-note { display: none; }
+}
+
+@media (max-width: 700px) {
+  .upi-panel { grid-template-columns: 1fr; padding: 1.5rem; }
+  .upi-panel-qr { display: none; } /* on phones the "Pay with UPI app" button is the way */
+  .upi-amount { font-size: 2.2rem; }
 }
