@@ -3185,3 +3185,11 @@ button.text-link {
   gap: .5rem;
   padding: 13px 16px;
 }
+
+/* Navbar greeting for a signed-in customer ("Hi, Sonam") */
+.nav-account.is-signed-in {
+  color: var(--turmeric);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
