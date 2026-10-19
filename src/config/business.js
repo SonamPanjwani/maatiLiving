@@ -3,23 +3,23 @@
 // `npm run check:launch`. Fill these in before launch.
 export const business = {
   tradeName: "Maati Living",
-  legalName: "TODO: registered business or proprietor name",
+  legalName: "Maati Living",
   address: {
     line1: "Panjwani Heights, Behind Hotel Babylon Inn, Jail Road, Sai Nagar",
     city: "Raipur",
     state: "Chhattisgarh",
-    pincode: "494001", // as given by the owner — Raipur PINs usually start with 492; confirm before launch
+    pincode: "492001",
   },
   gstin: null, // e.g. "27ABCDE1234F1Z5" once registered; leave null if not registered
   jurisdictionCity: "Raipur",
   techSupportEmail: "tech.maatiliving@gmail.com", // problems with the website itself (login, checkout, pages)
   // Required for Indian e-commerce (Consumer Protection (E-Commerce) Rules, 2020).
   grievanceOfficer: {
-    name: "TODO: name of the person who handles complaints",
+    name: "Sonam Panjwani",
     email: null, // null → the contact email from siteConfig
   },
   policies: {
-    effectiveDate: "TODO: date these policies take effect, e.g. 1 December 2026",
+    effectiveDate: "21 August 2026",
     dispatchWithinDays: 3,         // working days to pack and hand to the courier
     deliveryDays: "4–10",          // after dispatch, typical range within India
     damageReportWithinHours: 48,   // to report breakage/damage, with photos
@@ -27,9 +27,29 @@ export const business = {
     changeOfMindReturns: false,    // true = unused items may be returned for any reason
     refundWithinDays: 7,           // working days to issue an approved refund
   },
+  // From the "About Maati Living" brochure. bio = paragraphs.
   founders: [
-    { name: "TODO: first founder's name", role: "Co-founder", bio: "TODO: a few lines in her own words." },
-    { name: "TODO: second founder's name", role: "Co-founder", bio: "TODO: a few lines in her own words." },
+    {
+      name: "Shruti",
+      role: "Co-founder",
+      bio: [
+        "Finance is my world. I've spent years working with businesses and entrepreneurs, helping them understand numbers, funding and the practical side of making a business work.",
+        "At Maati Living, I'm the one asking, \u201cDoes this actually make sense?\u201d, from sourcing and pricing to finding the right people to work with.",
+      ],
+    },
+    {
+      name: "Sonam",
+      role: "Co-founder",
+      bio: [
+        "I'm an engineer turned technology professional, with experience in software development and teaching coding to students.",
+        "At Maati Living, I bring the curious, problem-solving side: figuring things out, building things and probably asking \u201cCan we do this differently?\u201d a lot.",
+      ],
+    },
+    {
+      name: "TODO: third founder's name",
+      role: "Co-founder",
+      bio: ["TODO: a few lines in her own words, like the two above."],
+    },
   ],
 };
 

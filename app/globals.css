@@ -2789,8 +2789,42 @@ h3.eyebrow {
 
 .founders-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 3rem 5vw;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3rem 4vw;
+}
+
+.founder p + p {
+  margin-top: .8rem;
+}
+
+/* About: vision + objective side by side */
+.about-pillars {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem 6vw;
+  border-top: 1px solid var(--line);
+}
+
+.about-pillar h2 {
+  font-size: clamp(2.2rem, 3.4vw, 3.6rem);
+  margin-bottom: 1.4rem;
+}
+
+.about-pillar p:not(.eyebrow) {
+  max-width: 460px;
+  margin: 0;
+}
+
+.questions-after {
+  border-bottom: 0 !important;
+  display: block !important;
+  font: 400 15px/1.6 var(--font-work-sans), sans-serif !important;
+  padding: 1.6rem 0 0 65px !important;
+  max-width: 520px;
+}
+
+.about-promise {
+  border-top: 1px solid var(--line);
 }
 
 .founder-photo {
@@ -2850,6 +2884,8 @@ h3.eyebrow {
   .contact-grid,
   .contact-details,
   .founders-grid { grid-template-columns: 1fr; }
+  .about-pillars { grid-template-columns: 1fr; }
+  .questions-after { padding-left: 40px !important; }
   .contact-grid { margin-bottom: 3rem; }
   .about-hero h1 { font-size: clamp(3rem, 15vw, 5rem); }
   .footer-links { gap: 2.5rem 3rem; }
