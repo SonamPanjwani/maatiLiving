@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { getWhatsAppUrl } from "@/src/config/site";
+import { getWhatsAppOrderUrl } from "@/src/config/site";
 import { formatPrice } from "@/src/lib/format";
 
 const HEADINGS = {
@@ -52,7 +52,7 @@ export default function OrderSummary({ order, backHref = "/shop", backLabel = "K
       <address className="order-address">
         {order.customer_name}<br />{order.address_line1}<br />{order.address_line2 && <>{order.address_line2}<br /></>}{order.city}, {order.state} {order.pincode}<br />{order.phone}
       </address>
-      <a className="text-link" href={getWhatsAppUrl(`my order ${order.order_number}`)} target="_blank" rel="noreferrer">Questions? Message us <ArrowUpRight size={14} /></a>
+      <a className="text-link" href={getWhatsAppOrderUrl(order.order_number)} target="_blank" rel="noreferrer">Questions? Message us <ArrowUpRight size={14} /></a>
       {order.status === "failed"
         ? <Link className="button button-dark cart-checkout" href="/checkout">Try again <ArrowUpRight size={16} /></Link>
         : <Link className="button button-dark cart-checkout" href={backHref}>{backLabel} <ArrowUpRight size={16} /></Link>}

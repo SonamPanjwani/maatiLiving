@@ -167,7 +167,7 @@ export default function CheckoutForm({ paymentMode, testMode, account = null, sh
         <legend className="eyebrow">CONTACT</legend>
         <div className="field-row">
           <label className="field"><span>Full name</span><input ref={nameRef} name="name" defaultValue={contact.name} autoComplete="name" required /></label>
-          <label className="field"><span>Mobile</span><input ref={phoneRef} name="phone" type="tel" inputMode="numeric" defaultValue={contact.phone} autoComplete="tel-national" placeholder="10-digit number" required /></label>
+          <label className="field"><span>Mobile</span><input ref={phoneRef} name="phone" type="tel" inputMode="numeric" pattern="[6-9][0-9]{9}" maxLength={10} title="10-digit mobile number starting with 6, 7, 8 or 9" defaultValue={contact.phone} autoComplete="tel-national" placeholder="10-digit number" required /></label>
         </div>
         <label className="field"><span>Email <small>for your order confirmation</small></span><input name="email" type="email" defaultValue={account?.email ?? ""} autoComplete="email" required /></label>
       </fieldset>

@@ -26,13 +26,13 @@ export function CopyUpiId({ upiId }) {
 export default function UpiReferenceForm({ orderNumber, token, existingReference }) {
   const [state, formAction] = useFormState(submitPaymentReference, {});
   if (state?.saved || existingReference) {
-    return <p className="admin-success" role="status">Thank you. We've got your transaction ID{existingReference && !state?.saved ? ` (${existingReference})` : ""}. We'll check the payment and confirm your order, usually within a few hours. Typed it wrong? Send us the payment screenshot on WhatsApp.</p>;
+    return <p className="admin-success" role="status">Thank you. We've got your transaction ID{existingReference && !state?.saved ? ` (${existingReference})` : ""}. We'll check the payment and confirm your order, usually within a few hours.</p>;
   }
   return <form action={formAction} className="account-form upi-ref-form">
     <input type="hidden" name="orderNumber" value={orderNumber} />
     <input type="hidden" name="token" value={token} />
     <label className="field"><span>UPI transaction ID <small>12-digit UTR from your payment app (under transaction details)</small></span>
-      <input name="reference" type="text" autoComplete="off" placeholder="e.g. 412345678901" required />
+      <input name="reference" type="text" inputMode="numeric" pattern="\d{12}" maxLength={12} title="12-digit UTR number" autoComplete="off" placeholder="e.g. 412345678901" required />
     </label>
     {state?.error && <p className="admin-error" role="alert">{state.error}</p>}
     <SubmitButton pendingLabel="Sending…">I've paid</SubmitButton>

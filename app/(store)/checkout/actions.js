@@ -78,8 +78,8 @@ export async function placeUpiOrder({ lines, customer: input }) {
 
 // Customer says "I've paid" and gives the UPI transaction id. Needs the order's secret access token.
 export async function submitPaymentReference(_prevState, formData) {
-  const reference = String(formData.get("reference") ?? "").replace(/\s+/g, "").toUpperCase();
-  if (!/^[A-Z0-9]{6,35}$/.test(reference)) return { error: "Please enter the UPI transaction ID (usually 12 digits) from your payment app." };
+  const reference = String(formData.get("reference") ?? "").replace(/\s+/g, "");
+  if (!/^\d{12}$/.test(reference)) return { error: "Please enter the 12-digit UTR number from your payment app (open the payment, then transaction details)." };
   const saved = await submitUpiReference(String(formData.get("orderNumber") ?? ""), String(formData.get("token") ?? ""), reference);
   return saved ? { saved: true } : { error: "We couldn't save that. Please message us on WhatsApp with your order number." };
 }

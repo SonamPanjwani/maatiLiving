@@ -16,6 +16,10 @@ export const siteConfig = {
   email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "hello@example.com",
 };
 
+export function getWhatsAppOrderUrl(orderNumber) {
+  return `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(`Hi Maati Living, I have a question about my order ${orderNumber}.`)}`;
+}
+
 export function getWhatsAppUrl(productName) {
   const message = `Hi Maati Living, I'm interested in ${productName}. Could you please share availability and details?`;
   return `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(message)}`;

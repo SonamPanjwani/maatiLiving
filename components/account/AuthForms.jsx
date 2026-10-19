@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useFormState } from "react-dom";
 import SubmitButton from "@/components/admin/SubmitButton";
-import { requestPasswordReset, signInCustomer, signUpCustomer, updatePassword } from "@/app/(store)/account/actions";
+import { changePassword, requestPasswordReset, signInCustomer, signUpCustomer, updatePassword } from "@/app/(store)/account/actions";
 
 const withNext = (path, next) => (next && next !== "/account" ? `${path}?next=${encodeURIComponent(next)}` : path);
 
@@ -48,6 +48,19 @@ export function ForgotPasswordForm() {
   </form>;
 }
 
+// Profile page: current password required.
+export function ChangePasswordForm() {
+  const [state, formAction] = useFormState(changePassword, {});
+  return <form action={formAction} className="account-form">
+    <label className="field"><span>Current password</span><input type="password" name="current" autoComplete="current-password" required /></label>
+    <label className="field"><span>New password <small>at least 8 characters</small></span><input type="password" name="password" autoComplete="new-password" minLength={8} required /></label>
+    <label className="field"><span>Repeat new password</span><input type="password" name="confirm" autoComplete="new-password" minLength={8} required /></label>
+    {state?.error && <p className="admin-error" role="alert">{state.error}</p>}
+    <SubmitButton pendingLabel="Saving…">Change password</SubmitButton>
+  </form>;
+}
+
+// After the reset email link.
 export function ResetPasswordForm() {
   const [state, formAction] = useFormState(updatePassword, {});
   return <form action={formAction} className="account-form">

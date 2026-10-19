@@ -2,14 +2,15 @@ import { indianStates } from "@/src/config/shop";
 
 // Shared Indian address inputs (checkout + saved addresses). Field names match validateAddress.
 // Pass `value`/`onStateChange` to control the state select (checkout recalculates delivery from it).
-export default function AddressFields({ address = {}, stateValue, onStateChange, includeContact = true }) {
+export default function AddressFields({ address: given, stateValue, onStateChange, includeContact = true }) {
+  const address = given ?? {}; // null for a new address
   const stateProps = onStateChange
     ? { value: stateValue, onChange: (event) => onStateChange(event.target.value) }
     : { defaultValue: address.state ?? "" };
   return <>
     {includeContact && <div className="field-row">
       <label className="field"><span>Full name</span><input name="name" defaultValue={address.name ?? ""} autoComplete="name" required /></label>
-      <label className="field"><span>Mobile</span><input name="phone" type="tel" inputMode="numeric" defaultValue={address.phone ?? ""} autoComplete="tel-national" placeholder="10-digit number" required /></label>
+      <label className="field"><span>Mobile</span><input name="phone" type="tel" inputMode="numeric" pattern="[6-9][0-9]{9}" maxLength={10} title="10-digit mobile number starting with 6, 7, 8 or 9" defaultValue={address.phone ?? ""} autoComplete="tel-national" placeholder="10-digit number" required /></label>
     </div>}
     <label className="field"><span>House / flat, street</span><input name="addressLine1" defaultValue={address.line1 ?? ""} autoComplete="address-line1" required /></label>
     <label className="field"><span>Area, landmark <small>optional</small></span><input name="addressLine2" defaultValue={address.line2 ?? ""} autoComplete="address-line2" /></label>

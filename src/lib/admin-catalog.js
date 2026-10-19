@@ -102,7 +102,8 @@ export async function adminGetDashboard({ lowStockAt = 5 } = {}) {
     supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending").eq("payment_method", "upi_manual").not("payment_reference", "is", null).then(({ count }) => count ?? 0),
     supabase.from("products").select("id, name, stock, is_available").lte("stock", lowStockAt).order("stock").limit(12).then(unwrap),
     supabase.from("orders").select("id, order_number, status, payment_method, payment_reference, customer_name, total_paise, created_at")
-      .in("status", [...SALE_STATUSES, "cancelled", "refunded"]).order("created_at", { ascending: false }).limit(8).then(unwrap),
+      .or("status.in.(paid,shipped,delivered,cancelled,refunded),and(status.eq.pending,payment_method.eq.upi_manual)")
+      .order("created_at", { ascending: false }).limit(8).then(unwrap),
   ]);
 
   // Last 30 IST days, oldest first, zero-filled.

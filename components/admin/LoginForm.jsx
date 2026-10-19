@@ -7,8 +7,8 @@ import SubmitButton from "./SubmitButton";
 export default function LoginForm({ initialError }) {
   const [state, formAction] = useFormState(signIn, { error: initialError });
   return <form action={formAction} className="admin-form">
-    <label className="field"><span>Email</span><input type="email" name="email" autoComplete="email" required /></label>
-    <label className="field"><span>Password</span><input type="password" name="password" autoComplete="current-password" required /></label>
+    <label className="field" htmlFor="admin-email"><span>Email</span><input id="admin-email" type="email" name="email" autoComplete="email" required /></label>
+    <label className="field" htmlFor="admin-password"><span>Password</span><input id="admin-password" type="password" name="password" autoComplete="current-password" required /></label>
     {state?.error && <p className="admin-error" role="alert">{state.error}</p>}
     <SubmitButton pendingLabel="Signing in…">Sign in</SubmitButton>
   </form>;

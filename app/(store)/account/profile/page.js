@@ -1,5 +1,5 @@
 import AccountShell from "@/components/account/AccountShell";
-import { ResetPasswordForm } from "@/components/account/AuthForms";
+import { ChangePasswordForm } from "@/components/account/AuthForms";
 import ProfileForm from "@/components/account/ProfileForm";
 import { requireCustomerPage } from "@/src/lib/auth";
 
@@ -10,6 +10,6 @@ export default async function ProfilePage({ searchParams }) {
   return <AccountShell isAdmin={profile?.role === "admin"} active="/account/profile" name={profile?.full_name} title={<>Your<br /><em>details.</em></>}>
     {searchParams?.password === "updated" && <p className="admin-success" role="status">Password updated.</p>}
     <div className="account-panel"><h2 className="eyebrow">PROFILE</h2><ProfileForm profile={profile} email={user.email} /></div>
-    <div className="account-panel"><h2 className="eyebrow">CHANGE PASSWORD</h2><ResetPasswordForm /></div>
+    <div className="account-panel"><h2 className="eyebrow">CHANGE PASSWORD</h2><ChangePasswordForm /></div>
   </AccountShell>;
 }

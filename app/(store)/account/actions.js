@@ -81,14 +81,44 @@ export async function requestPasswordReset(_prevState, formData) {
   return { sent: email };
 }
 
-export async function updatePassword(_prevState, formData) {
-  await assertSignedIn();
+function checkNewPassword(formData) {
   const password = String(formData.get("password") ?? "");
   const problem = passwordProblem(password);
   if (problem) return { error: problem };
   if (password !== String(formData.get("confirm") ?? "")) return { error: "The two passwords don't match." };
-  const { error } = await createSupabaseServerClient().auth.updateUser({ password });
-  if (error) return { error: "We couldn't update your password. Please sign out and in again, then try once more." };
+  return { password };
+}
+
+// Signed-in change (profile page): the current password is required, so an unattended open session
+// can't be used to take over the account.
+export async function changePassword(_prevState, formData) {
+  const { user } = await assertSignedIn();
+  const { password, error } = checkNewPassword(formData);
+  if (error) return { error };
+  const current = String(formData.get("current") ?? "");
+  if (!current) return { error: "Please enter your current password." };
+  const supabase = createSupabaseServerClient();
+  const { error: wrong } = await supabase.auth.signInWithPassword({ email: user.email, password: current });
+  if (wrong) return { error: "Your current password is incorrect." };
+  const { error: failed } = await supabase.auth.updateUser({ password });
+  if (failed) return { error: "We couldn't update your password. Please try again." };
+  redirect("/account/profile?password=updated");
+}
+
+// After the "forgot password" email link: only allowed shortly after a recovery link was sent
+// (the link itself proves ownership of the email, so no current password is asked).
+const RECOVERY_WINDOW_MS = 60 * 60 * 1000;
+
+export async function updatePassword(_prevState, formData) {
+  const { user } = await assertSignedIn();
+  const sentAt = user.recovery_sent_at ? new Date(user.recovery_sent_at).getTime() : 0;
+  if (!sentAt || Date.now() - sentAt > RECOVERY_WINDOW_MS) {
+    return { error: "This reset link has expired. Please request a new one from \"Forgot password?\", or change your password from your profile." };
+  }
+  const { password, error } = checkNewPassword(formData);
+  if (error) return { error };
+  const { error: failed } = await createSupabaseServerClient().auth.updateUser({ password });
+  if (failed) return { error: "We couldn't update your password. Please request a new reset link." };
   redirect("/account/profile?password=updated");
 }
 

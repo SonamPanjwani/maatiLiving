@@ -72,7 +72,7 @@ export async function saveProduct(_prevState, formData) {
   if (!name) return { error: "Please give the product a name." };
   if (!slug) return { error: "Please give the product a slug (used in its web address)." };
   if (!text(formData, "categoryId")) return { error: "Please choose a category." };
-  if (!Number.isFinite(price) || price < 0) return { error: "Price must be a number in rupees, e.g. 450." };
+  if (!Number.isFinite(price) || price <= 0) return { error: "Price must be more than ₹0, e.g. 450." };
   if (!Number.isInteger(stock) || stock < 0) return { error: "Stock must be a whole number, 0 or more." };
 
   const row = {
@@ -197,6 +197,9 @@ export async function updateOrderStatus(formData) {
   if (status === "shipped") {
     update.tracking_courier = text(formData, "trackingCourier") || null;
     update.tracking_number = text(formData, "trackingNumber") || null;
+    if (!update.tracking_courier || !update.tracking_number) {
+      redirect(orderUrl(id, { error: "To mark it Shipped, enter the courier and tracking number (for hand delivery: courier \"Hand delivery\", tracking \"-\")." }));
+    }
     if (before.status !== "shipped") update.shipped_at = new Date().toISOString();
   }
   const { error } = await supabase.from("orders").update(update).eq("id", id);

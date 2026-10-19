@@ -3193,3 +3193,10 @@ button.text-link {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Footer links: comfortable tap targets on phones */
+@media (max-width: 700px) {
+  .footer-links a,
+  .footer-legal a { display: inline-block; padding: 10px 0; }
+  .footer-links div { gap: 0; }
+}

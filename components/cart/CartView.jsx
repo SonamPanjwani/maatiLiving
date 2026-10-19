@@ -72,9 +72,9 @@ export default function CartView({ shippingSettings }) {
             <h3><Link href={`/products/${item.slug}`}>{item.name}</Link></h3>
             <p>{formatPrice(item.price)}</p>
             <div className="qty-stepper" role="group" aria-label={`Quantity of ${item.name}`}>
-              <button type="button" onClick={() => setQuantity(item.productId, item.quantity - 1)} disabled={item.quantity <= 1} aria-label="Decrease quantity"><Minus size={14} /></button>
+              <button type="button" onClick={() => setQuantity(item.productId, item.quantity - 1)} disabled={item.quantity <= 1} aria-label={`Decrease quantity of ${item.name}`}><Minus size={14} /></button>
               <span aria-live="polite">{item.quantity}</span>
-              <button type="button" onClick={() => setQuantity(item.productId, item.quantity + 1)} disabled={item.quantity >= Math.min(item.maxQuantity ?? shopConfig.maxQuantityPerItem, shopConfig.maxQuantityPerItem)} aria-label="Increase quantity"><Plus size={14} /></button>
+              <button type="button" onClick={() => setQuantity(item.productId, item.quantity + 1)} disabled={item.quantity >= Math.min(item.maxQuantity ?? shopConfig.maxQuantityPerItem, shopConfig.maxQuantityPerItem)} aria-label={`Increase quantity of ${item.name}`}><Plus size={14} /></button>
             </div>
           </div>
           <div className="cart-line-end">

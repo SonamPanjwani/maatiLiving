@@ -27,7 +27,7 @@ export default function ProductForm({ product, categories }) {
             {categories.map((category) => <option key={category.id} value={category.id}>{category.parentSlug ? `${categories.find((c) => c.slug === category.parentSlug)?.name ?? ""} › ` : ""}{category.name}</option>)}
           </select>
         </label>
-        <label className="field"><span>Price (₹)</span><input name="price" type="number" min="0" step="1" defaultValue={p.price != null ? p.price / 100 : ""} required /></label>
+        <label className="field"><span>Price (₹)</span><input name="price" type="number" min="1" step="1" defaultValue={p.price != null ? p.price / 100 : ""} required /></label>
         <label className="field"><span>Stock</span><input name="stock" type="number" min="0" step="1" defaultValue={p.stock ?? 0} required /></label>
       </div>
       <div className="field-row">

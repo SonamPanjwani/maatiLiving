@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { cancelUnpaidOrder, confirmManualPayment, refundOrder, restockOrder, updateOrderStatus } from "@/app/admin/actions";
 import ConfirmSubmit from "@/components/admin/ConfirmSubmit";
+import StatusSubmit from "@/components/admin/StatusSubmit";
 import SubmitButton from "@/components/admin/SubmitButton";
 import { adminGetOrder } from "@/src/lib/admin-catalog";
 import { isEmailConfigured } from "@/src/lib/email";
@@ -94,12 +95,12 @@ export default async function AdminOrderPage({ params, searchParams }) {
               </label>
               <fieldset className="order-ship-fields">
                 <legend className="admin-note">When marking <strong>Shipped</strong></legend>
-                <label className="field"><span>Courier</span><input name="trackingCourier" defaultValue={order.tracking_courier ?? ""} placeholder="e.g. India Post, Delhivery" /></label>
-                <label className="field"><span>Tracking number</span><input name="trackingNumber" defaultValue={order.tracking_number ?? ""} /></label>
+                <label className="field"><span>Courier <small>required for Shipped</small></span><input name="trackingCourier" defaultValue={order.tracking_courier ?? ""} placeholder="e.g. India Post, Delhivery" /></label>
+                <label className="field"><span>Tracking number <small>required for Shipped</small></span><input name="trackingNumber" defaultValue={order.tracking_number ?? ""} /></label>
                 {isEmailConfigured && <div className="field-checks"><label><input type="checkbox" name="notify" defaultChecked /> Email the customer</label></div>}
               </fieldset>
               {order.status !== "cancelled" && <div className="field-checks"><label><input type="checkbox" name="restock" defaultChecked /> If cancelling, return items to stock</label></div>}
-              <SubmitButton>Update order</SubmitButton>
+              <StatusSubmit orderNumber={order.order_number} />
               <p className="admin-note">Cancelling doesn't refund the customer. Use Refund below.</p>
             </form>
           : (order.status === "pending" || order.status === "failed") && !upiPending
