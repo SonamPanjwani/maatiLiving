@@ -20,12 +20,12 @@ export const business = {
   },
   policies: {
     effectiveDate: "21 August 2026",
-    dispatchWithinDays: 3,         // working days to pack and hand to the courier
-    deliveryDays: "4–10",          // after dispatch, typical range within India
-    damageReportWithinHours: 48,   // to report breakage/damage, with photos
-    returnWindowDays: 7,           // days after delivery
-    changeOfMindReturns: false,    // true = unused items may be returned for any reason
-    refundWithinDays: 7,           // working days to issue an approved refund
+    dispatchWithinDays: 3, // working days to pack and hand to the courier
+    deliveryDays: "4–10", // after dispatch, typical range within India
+    damageReportWithinHours: 48, // to report breakage/damage, with photos
+    returnWindowDays: 7, // days after delivery
+    changeOfMindReturns: false, // true = unused items may be returned for any reason
+    refundWithinDays: 7, // working days to issue an approved refund
   },
   // From the "About Maati Living" brochure. bio = paragraphs.
   founders: [
@@ -41,8 +41,9 @@ export const business = {
       name: "Sonam",
       role: "Co-founder",
       bio: [
-        "I'm an engineer turned technology professional, with experience in software development and teaching coding to students.",
-        "At Maati Living, I bring the curious, problem-solving side: figuring things out, building things and probably asking \u201cCan we do this differently?\u201d a lot.",
+        "I'm an engineer turned technology professional, with experience in software development and training.",
+        "At Maati Living, I bring curiosity, creativity and a problem-solving mindset to building something meaningful \u2014 always asking, \u201cHow can we make this better?\u201d",
+        "For me, innovation isn't just about building something new \u2014 it's about making something that truly matters.",
       ],
     },
     {
@@ -56,13 +57,19 @@ export const business = {
   ],
 };
 
-export const isTodo = (value) => typeof value === "string" && value.startsWith("TODO");
+export const isTodo = (value) =>
+  typeof value === "string" && value.startsWith("TODO");
 
 // Every TODO value in the business config, as "path: value" strings.
 export function listTodos(value = business, path = "business") {
   if (isTodo(value)) return [`${path}: ${value}`];
   if (value && typeof value === "object") {
-    return Object.entries(value).flatMap(([key, child]) => listTodos(child, Array.isArray(value) ? `${path}[${key}]` : `${path}.${key}`));
+    return Object.entries(value).flatMap(([key, child]) =>
+      listTodos(
+        child,
+        Array.isArray(value) ? `${path}[${key}]` : `${path}.${key}`,
+      ),
+    );
   }
   return [];
 }

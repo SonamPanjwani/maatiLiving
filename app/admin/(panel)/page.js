@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import RevenueChart from "@/components/admin/RevenueChart";
 import { adminGetDashboard } from "@/src/lib/admin-catalog";
 import { formatPrice } from "@/src/lib/format";
@@ -11,7 +12,13 @@ export default async function AdminDashboard() {
   const data = await adminGetDashboard({ lowStockAt: LOW_STOCK_AT });
 
   return <>
-    <div className="admin-heading"><div><p className="eyebrow">OVERVIEW</p><h1>Dashboard</h1></div></div>
+    <div className="admin-heading">
+      <div><p className="eyebrow">OVERVIEW</p><h1>Dashboard</h1></div>
+      <div className="admin-quick-actions">
+        <a className="button button-dark" href="/admin/products/new"><Plus size={14} /> Add product</a>
+        <a className="stock-save" href="/admin/categories"><Plus size={14} /> Add category</a>
+      </div>
+    </div>
 
     {data.upiToVerify > 0 && <a className="upi-banner" href="/admin/orders?tab=upi">{data.upiToVerify} UPI {data.upiToVerify === 1 ? "payment" : "payments"} waiting for you to check in your bank app. Open →</a>}
 

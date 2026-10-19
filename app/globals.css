@@ -3170,3 +3170,18 @@ button.text-link {
   .shop-products { padding-top: 12vw; }
   .category-nav a { padding: .7rem 0 .5rem; }
 }
+
+.admin-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .8rem;
+}
+
+.admin-quick-actions .button,
+.admin-quick-actions .stock-save {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: 13px 16px;
+}
