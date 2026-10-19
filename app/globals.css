@@ -2986,3 +2986,38 @@ h3.eyebrow {
   .upi-panel-qr { display: none; } /* on phones the "Pay with UPI app" button is the way */
   .upi-amount { font-size: 2.2rem; }
 }
+
+/* ==========================================================================
+   23. Admin shortcut on customer account pages
+   ========================================================================== */
+
+.admin-return {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .4rem 1rem;
+  margin: 0 0 3rem;
+  padding: 12px 16px;
+  background: var(--charcoal);
+  color: var(--cotton);
+  font-size: 13px;
+}
+
+.admin-return strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.admin-return:hover strong,
+.admin-return:focus-visible strong {
+  color: var(--turmeric);
+}
+
+.account-nav a.account-nav-admin {
+  color: var(--madder);
+  font-weight: 600;
+}

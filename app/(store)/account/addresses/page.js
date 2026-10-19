@@ -13,7 +13,7 @@ export default async function AddressesPage({ searchParams }) {
     .order("is_default", { ascending: false }).order("created_at");
   const editing = addresses?.find((address) => address.id === searchParams?.edit) ?? null;
 
-  return <AccountShell active="/account/addresses" name={profile?.full_name} title={<>Saved<br /><em>addresses.</em></>}>
+  return <AccountShell isAdmin={profile?.role === "admin"} active="/account/addresses" name={profile?.full_name} title={<>Saved<br /><em>addresses.</em></>}>
     {searchParams?.saved && <p className="admin-success" role="status">Address saved.</p>}
     {addresses?.length > 0 && <ul className="address-list">
       {addresses.map((address) => <li key={address.id} className={address.id === editing?.id ? "is-editing" : ""}>
