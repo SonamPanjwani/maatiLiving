@@ -7,10 +7,13 @@ const dateFormat = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "sh
 
 export default async function AdminOrdersPage({ searchParams }) {
   const searching = Boolean(searchParams?.q || searchParams?.from || searchParams?.to);
-  // A search looks across every paid order unless a tab was picked explicitly.
-  const tab = ORDER_TABS.find((item) => item.key === searchParams?.tab) ?? (searching ? ORDER_TABS[4] : ORDER_TABS[0]);
-  const filters = { statuses: tab.statuses, paymentMethod: tab.paymentMethod, q: searchParams?.q, from: searchParams?.from, to: searchParams?.to };
-  const orders = await adminGetOrders(filters);
+  // A search looks across every order (any status) unless a tab was picked explicitly.
+  const SEARCH_ALL = { key: "search", label: "All", statuses: null };
+  const tab = ORDER_TABS.find((item) => item.key === searchParams?.tab) ?? (searching ? SEARCH_ALL : ORDER_TABS[0]);
+  const filters = { statuses: tab.statuses, paymentMethod: tab.paymentMethod, paidOnly: tab.paidOnly, q: searchParams?.q, from: searchParams?.from, to: searchParams?.to };
+  const found = await adminGetOrders(filters);
+  // UPI tab: orders where the customer says they've paid come first.
+  const orders = tab.key === "upi" ? [...found].sort((a, b) => Number(Boolean(b.payment_reference)) - Number(Boolean(a.payment_reference))) : found;
   const exportQuery = new URLSearchParams(Object.entries({ tab: tab.key, q: filters.q, from: filters.from, to: filters.to }).filter(([, value]) => value)).toString();
 
   return <>
@@ -20,12 +23,11 @@ export default async function AdminOrdersPage({ searchParams }) {
     </div>
 
     <form className="admin-filters" action="/admin/orders">
-      <input type="hidden" name="tab" value={tab.key} />
       <label className="field"><span>Search</span><input name="q" defaultValue={searchParams?.q ?? ""} placeholder="Order no., name, email or phone" /></label>
       <label className="field"><span>From</span><input type="date" name="from" defaultValue={searchParams?.from ?? ""} /></label>
       <label className="field"><span>To</span><input type="date" name="to" defaultValue={searchParams?.to ?? ""} /></label>
       <button type="submit" className="button button-dark">Search</button>
-      {searching && <a className="text-link" href={`/admin/orders?tab=${tab.key}`}>Clear</a>}
+      {searching && <a className="text-link" href="/admin/orders">Clear</a>}
     </form>
 
     <nav className="category-nav admin-tabs" aria-label="Order status"><ul>
@@ -34,6 +36,8 @@ export default async function AdminOrdersPage({ searchParams }) {
         return <li key={item.key}><a href={`/admin/orders?${params}`} className={item.key === tab.key ? "is-active" : ""} aria-current={item.key === tab.key ? "page" : undefined}>{item.label}</a></li>;
       })}
     </ul></nav>
+
+    {tab.key === "upi" && <p className="admin-note upi-tab-note">Orders with a transaction ID are listed first. Only confirm after you've seen the money in your own bank or UPI app. Orders with no transaction ID and no WhatsApp message after a day or two can be cancelled.</p>}
 
     {orders.length === 0
       ? <p className="admin-empty">{searching ? "No orders match that search." : "No orders here yet."}</p>

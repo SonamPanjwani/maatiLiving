@@ -14,7 +14,7 @@ const HEADINGS = {
 };
 
 const UPI_HEADINGS = {
-  awaiting: { eyebrow: "ORDER PLACED · PAYMENT DUE", title: <>Order placed.<br /><em>Now, the payment.</em></>, copy: "Pay by UPI below. We'll confirm your order and start packing as soon as your payment reaches us." },
+  awaiting: { eyebrow: "ORDER PLACED · PAYMENT DUE", title: <>Order placed.<br /><em>Now, the payment.</em></>, copy: "Pay by UPI below. We'll confirm your order and start packing as soon as your payment reaches us. Please keep this page open or bookmark it until you've paid." },
   checking: { eyebrow: "CHECKING PAYMENT", title: <>Thank you.<br /><em>We're checking it.</em></>, copy: "We've got your transaction ID and will confirm your order shortly, usually within a few hours." },
 };
 

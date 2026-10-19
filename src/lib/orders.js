@@ -2,7 +2,7 @@ import "server-only";
 import { shippingFor, shopConfig } from "@/src/config/shop";
 import { getProductsByIds } from "./catalog";
 import { getShippingSettings } from "./settings";
-import { sendOrderEmails } from "./email";
+import { sendOrderEmails, sendUpiPaymentToCheckEmail } from "./email";
 import { getSupabaseAdminClient, isSupabaseAdminConfigured } from "./supabase/admin";
 import { clean, isValidEmail, validateAddress } from "./validation";
 
@@ -138,8 +138,9 @@ export async function submitUpiReference(orderNumber, accessToken, reference) {
     .update({ payment_reference: reference, payment_submitted_at: new Date().toISOString() })
     .eq("order_number", orderNumber).eq("access_token", accessToken)
     .eq("payment_method", "upi_manual").eq("status", "pending")
-    .select("id");
+    .select(ORDER_COLUMNS);
   if (error) console.error("submitUpiReference:", error.message);
+  if (data?.[0]) await sendUpiPaymentToCheckEmail(data[0]);
   return Boolean(data?.length);
 }
 

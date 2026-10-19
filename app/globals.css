@@ -25,6 +25,7 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 78px; /* fixed navbar */
 }
 
 body {
@@ -96,6 +97,11 @@ button {
   text-transform: uppercase;
   font-size: 10px;
   letter-spacing: .16em;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .desktop-nav { gap: 1.4rem; }
 }
 
 .desktop-nav a,
@@ -143,6 +149,7 @@ button {
 
 .hero {
   height: 100vh;
+  height: 100svh; /* phones: don't hide the bottom under the browser toolbar */
   min-height: 680px;
   position: relative;
   display: flex;
@@ -272,12 +279,21 @@ button {
   font-style: italic;
 }
 
+/* Charcoal on the light sections (turmeric at 10px fails contrast on cotton);
+   turmeric stays on the dark sections where it passes. */
 .eyebrow {
+  font-family: var(--font-work-sans), sans-serif;
+  line-height: 1.6;
   font-size: 10px;
   letter-spacing: .19em;
   font-weight: 600;
   margin: 0 0 1.2rem;
   text-transform: uppercase;
+  color: var(--charcoal);
+}
+
+.beliefs .eyebrow,
+.hero .eyebrow {
   color: var(--turmeric);
 }
 
@@ -309,8 +325,9 @@ h2 em {
 
 .hero-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 2rem;
+  gap: 1.2rem 2rem;
 }
 
 .button {
@@ -337,6 +354,11 @@ h2 em {
   color: var(--charcoal);
 }
 
+.button-light:hover {
+  background: var(--madder);
+  color: var(--cotton);
+}
+
 .text-link {
   display: inline-flex;
   align-items: center;
@@ -355,7 +377,9 @@ h2 em {
   left: 5vw;
   right: 5vw;
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1.5rem;
   color: var(--cotton);
   font-size: 9px;
   letter-spacing: .18em;
@@ -445,6 +469,8 @@ h2 em {
   right: 15px;
   font-size: 10px;
   letter-spacing: .1em;
+  background: var(--cotton);
+  padding: 3px 7px;
 }
 
 .product-meta {
@@ -587,7 +613,7 @@ h2 em {
 .questions p span {
   font: 11px var(--font-work-sans);
   letter-spacing: .1em;
-  color: var(--turmeric);
+  color: var(--madder);
 }
 
 /* Small lead-in above the closing question: "And most importantly," */
@@ -728,7 +754,8 @@ footer small {
    ========================================================================== */
 
 @media (max-width: 700px) {
-  .navbar { height: 64px; padding: 0 6vw; }
+  .navbar { height: 64px; padding: 0 8vw; }
+  html { scroll-padding-top: 64px; }
   .desktop-nav { display: none; }
   .menu-toggle { display: block; }
 
@@ -740,6 +767,7 @@ footer small {
   .section-grid,
   .approach { display: block; padding: 22vw 8vw; }
   .section-grid h2,
+  .approach h2,
   .section-heading h2 { font-size: clamp(3rem, 15vw, 5rem); margin-bottom: 3rem; }
   .body-copy { max-width: none; }
   .section { padding: 20vw 8vw; }
@@ -763,7 +791,7 @@ footer small {
   .final-cta { padding: 24vw 8vw; }
   .final-cta h2 { font-size: clamp(3.6rem, 15vw, 6rem); }
 
-  footer { display: block; padding: 15vw 8vw 2rem; }
+  footer { display: block; padding: 15vw 8vw 5.5rem; } /* room for the floating WhatsApp button */
   .footer-links { gap: 3rem; margin: 4rem 0; }
   .floating-whatsapp { right: 15px; bottom: 15px; }
   .logo img { height: 31px; max-width: 125px; }
@@ -922,7 +950,7 @@ footer small {
   letter-spacing: .16em;
   text-transform: uppercase;
   font-weight: 600;
-  color: var(--turmeric);
+  color: var(--charcoal);
   padding: 0 1rem .8rem 0;
   border-bottom: 1px solid var(--line);
 }
@@ -1093,10 +1121,10 @@ footer small {
   background: none;
   border: 1px solid var(--madder);
   color: var(--madder);
-  padding: 8px 12px;
+  padding: 12px 14px;
   text-transform: uppercase;
   letter-spacing: .13em;
-  font-size: 9px;
+  font-size: 10px;
   cursor: pointer;
 }
 
@@ -2374,7 +2402,7 @@ h3.eyebrow {
 }
 
 .rev-col.is-active .rev-bar {
-  background: #b9503f;
+  background: color-mix(in srgb, var(--madder) 85%, white);
 }
 
 .rev-peak {
@@ -2854,7 +2882,7 @@ h3.eyebrow {
 }
 
 .status-page h1 {
-  font-size: clamp(3rem, 6vw, 6.5rem);
+  font-size: clamp(3rem, 5.4vw, 6rem);
   margin-bottom: 2rem;
 }
 
@@ -3074,4 +3102,61 @@ h3.eyebrow {
 .account-nav a.account-nav-admin {
   color: var(--madder);
   font-weight: 600;
+}
+
+/* ==========================================================================
+   24. Pre-launch polish: tap targets, iOS zoom, admin on tablets/phones
+   ========================================================================== */
+
+.cart-remove {
+  min-height: 44px;
+  padding: 0 4px;
+}
+
+button.text-link {
+  min-height: 44px;
+}
+
+.stock-save {
+  background: none;
+  border: 1px solid rgba(42,38,34,.25);
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--charcoal);
+  cursor: pointer;
+}
+
+.stock-save:hover {
+  border-color: var(--charcoal);
+}
+
+.upi-tab-note {
+  margin: -.6rem 0 1.4rem;
+}
+
+@media (max-width: 1000px) {
+  .admin-split { grid-template-columns: 1fr; gap: 2.5rem; }
+}
+
+@media (max-width: 700px) {
+  /* iOS Safari zooms into inputs smaller than 16px */
+  .field input,
+  .field select,
+  .field textarea,
+  .stock-form input { font-size: 16px; }
+  /* Admin nav wraps instead of hiding links off-screen */
+  .admin-bar { height: auto; flex-wrap: wrap; padding: 12px 6vw; row-gap: .6rem; }
+  .admin-bar nav { order: 3; width: 100%; flex-wrap: wrap; gap: .8rem 1.4rem; overflow: visible; }
+}
+
+/* ==========================================================================
+   25. Pre-launch polish: storefront on phones
+   ========================================================================== */
+
+@media (max-width: 700px) {
+  .shop-products { padding-top: 12vw; }
+  .category-nav a { padding: .7rem 0 .5rem; }
 }

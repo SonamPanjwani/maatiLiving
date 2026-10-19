@@ -27,7 +27,7 @@ export function CartTotals({ subtotal, state = null, shippingSettings }) {
   return <dl className="cart-totals">
     <div><dt>Subtotal</dt><dd>{formatPrice(subtotal)}</dd></div>
     <div><dt>Delivery</dt><dd>{shipping === null ? (state ? "—" : "Calculated at checkout") : shipping ? formatPrice(shipping) : "Free"}</dd></div>
-    {free != null && shipping !== 0 && <p className="cart-free-note">Free delivery on orders from {formatPrice(free)}.</p>}
+    {free != null && shipping !== 0 && <div className="cart-free-note"><dd>Free delivery on orders from {formatPrice(free)}.</dd></div>}
     <div className="cart-total"><dt>{shipping === null ? "Total before delivery" : "Total"}</dt><dd>{formatPrice(subtotal + (shipping ?? 0))}</dd></div>
   </dl>;
 }

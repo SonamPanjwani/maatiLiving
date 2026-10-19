@@ -26,9 +26,10 @@ export default function Home() {
     sameAs: [siteConfig.instagramUrl],
     contactPoint: { "@type": "ContactPoint", contactType: "customer service", email: siteConfig.email, areaServed: "IN" },
   };
-  return <main id="content">
-    <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(organisation)} />
+  return <>
     <Navbar />
+    <main id="content">
+    <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(organisation)} />
     <Hero />
     <Intro />
     <Collection />
@@ -37,7 +38,8 @@ export default function Home() {
     <Story />
     <Approach />
     <FinalCta />
+    </main>
     <Footer />
     <FloatingWhatsApp />
-  </main>;
+  </>;
 }

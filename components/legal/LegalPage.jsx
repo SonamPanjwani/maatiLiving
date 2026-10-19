@@ -8,7 +8,8 @@ export function V({ children }) {
 
 export function BusinessAddress() {
   const { address } = business;
-  return <><V>{business.legalName}</V> (trading as {business.tradeName}), <V>{address.line1}</V>,<V>{address.city}</V>, <V>{address.state}</V> <V>{address.pincode}</V>, India</>;
+  const tradingAs = business.legalName !== business.tradeName ? ` (trading as ${business.tradeName})` : "";
+  return <><V>{business.legalName}</V>{tradingAs}, <V>{address.line1}</V>, <V>{address.city}</V>, <V>{address.state}</V> <V>{address.pincode}</V>, India</>;
 }
 
 const POLICY_LINKS = [

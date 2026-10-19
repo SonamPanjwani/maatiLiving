@@ -44,7 +44,7 @@ export async function GET(request) {
 
   const params = new URL(request.url).searchParams;
   const tab = ORDER_TABS.find((item) => item.key === params.get("tab")) ?? ORDER_TABS.find((item) => item.key === "all");
-  const orders = await adminExportOrders({ statuses: tab.statuses, paymentMethod: tab.paymentMethod, q: params.get("q"), from: params.get("from"), to: params.get("to") });
+  const orders = await adminExportOrders({ statuses: tab.statuses, paymentMethod: tab.paymentMethod, paidOnly: tab.paidOnly, q: params.get("q"), from: params.get("from"), to: params.get("to") });
 
   const lines = [COLUMNS.map(([title]) => cell(title)).join(","), ...orders.map((order) => COLUMNS.map(([, get]) => cell(get(order))).join(","))];
   const stamp = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());

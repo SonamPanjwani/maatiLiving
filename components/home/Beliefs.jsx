@@ -7,5 +7,5 @@ const beliefs = [
 ];
 
 export default function Beliefs() {
-  return <section className="beliefs section"><p className="eyebrow">WHAT WE BELIEVE</p><div className="belief-list">{beliefs.map(([number, title, copy]) => <div className="belief" key={number}><span>{number}</span><h3>{title}</h3><p>{copy}</p></div>)}</div></section>;
+  return <section className="beliefs section"><h2 className="eyebrow">WHAT WE BELIEVE</h2><div className="belief-list">{beliefs.map(([number, title, copy]) => <div className="belief" key={number}><span>{number}</span><h3>{title}</h3><p>{copy}</p></div>)}</div></section>;
 }

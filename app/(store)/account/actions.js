@@ -88,7 +88,7 @@ export async function updatePassword(_prevState, formData) {
   if (problem) return { error: problem };
   if (password !== String(formData.get("confirm") ?? "")) return { error: "The two passwords don't match." };
   const { error } = await createSupabaseServerClient().auth.updateUser({ password });
-  if (error) return { error: "We couldn't update your password. Please request a new reset link." };
+  if (error) return { error: "We couldn't update your password. Please sign out and in again, then try once more." };
   redirect("/account/profile?password=updated");
 }
 

@@ -21,6 +21,6 @@ export const ORDER_TABS = [
   { key: "shipped", label: "Shipped", statuses: ["shipped"] },
   { key: "delivered", label: "Delivered", statuses: ["delivered"] },
   { key: "closed", label: "Cancelled / refunded", statuses: ["cancelled", "refunded"] },
-  { key: "all", label: "All paid", statuses: ["paid", "shipped", "delivered", "cancelled", "refunded"] },
+  { key: "all", label: "All paid", statuses: ["paid", "shipped", "delivered", "cancelled", "refunded"], paidOnly: true },
   { key: "unpaid", label: "Unpaid / failed", statuses: ["pending", "failed"], paymentMethod: "razorpay" },
 ];

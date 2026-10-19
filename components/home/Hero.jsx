@@ -8,9 +8,7 @@ import { heroSlides } from "@/src/data/hero";
 import { isCloudinaryConfigured } from "@/src/config/cloudinary";
 
 function FallbackImage({ slide }) {
-  return <div className={`textile textile-${slide.variant}`} role="img" aria-label={`${slide.alt} — replace with final photography`}>
-    <span>TEXTILE STUDY / REPLACE WITH FINAL IMAGE</span>
-  </div>;
+  return <div className={`textile textile-${slide.variant}`} role="img" aria-label={slide.alt} />;
 }
 
 export default function Hero() {
@@ -29,7 +27,7 @@ export default function Hero() {
   const publicId = activeSlide.mobilePublicId || activeSlide.publicId;
 
   return <section className="hero">
-    <div className="hero-image" aria-live="polite">
+    <div className="hero-image">
       <AnimatePresence initial={false} mode="sync">
         <motion.div
           key={activeSlide.id}
@@ -49,7 +47,7 @@ export default function Hero() {
       <motion.p initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .2 }} className="hero-brand">Maati <em>Living</em></motion.p>
       <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .35 }}>Thoughtfully chosen.<br /><em>Naturally better.</em></motion.h1>
       <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .5 }} className="hero-description">Discover things made with thought, meant for everyday life.</motion.p>
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .65 }} className="hero-actions"><a className="button button-dark" href="#collection">Explore the collection <ArrowUpRight size={16} /></a><a className="text-link" href="#story">Our story</a></motion.div>
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .65 }} className="hero-actions"><a className="button button-light" href="#collection">Explore the collection <ArrowUpRight size={16} /></a><a className="text-link" href="#story">Our story</a></motion.div>
     </div>
     <div className="hero-foot"><span>NATURAL · HANDCRAFTED · THOUGHTFUL</span><ArrowDown size={17} /></div>
   </section>;

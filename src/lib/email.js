@@ -63,3 +63,25 @@ export async function sendShippedEmail(order) {
     console.error("Shipped email failed:", cause);
   }
 }
+
+// Direct UPI: tell the customer how to get back to their payment page (it's the only place to pay).
+export async function sendUpiOrderPlacedEmail(order) {
+  if (!isEmailConfigured) return;
+  const note = `<p style="font-size:14px;line-height:1.6;margin:0 0 20px;padding:12px 16px;background:#EDE4D3">Please pay <strong>${formatPrice(order.total_paise)}</strong> by UPI using the button below. We'll start packing as soon as your payment reaches us.</p>`;
+  try {
+    await send(order.email, `Complete your Maati Living order ${order.order_number}`, orderHtml(order, "Order placed.<br>Now, the payment.", note));
+  } catch (cause) {
+    console.error("UPI order email failed:", cause);
+  }
+}
+
+// Direct UPI: tell the shop a customer says they've paid, so it gets checked quickly.
+export async function sendUpiPaymentToCheckEmail(order) {
+  if (!isEmailConfigured || !notifyTo) return;
+  const note = `<p style="font-size:14px;line-height:1.6;margin:0 0 20px;padding:12px 16px;background:#EDE4D3">Customer says they paid <strong>${formatPrice(order.total_paise)}</strong>. Transaction ID: <strong>${escape(order.payment_reference ?? "—")}</strong>.<br>Check your own bank / UPI app before confirming in /admin → Orders → UPI to verify.</p>`;
+  try {
+    await send(notifyTo, `UPI payment to check: ${order.order_number}, ${formatPrice(order.total_paise)}`, orderHtml(order, "A UPI payment to check.", note));
+  } catch (cause) {
+    console.error("UPI check email failed:", cause);
+  }
+}

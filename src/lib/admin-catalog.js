@@ -33,8 +33,9 @@ export const SALE_STATUSES = ["paid", "shipped", "delivered"]; // money kept (no
 const isDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value ?? ""));
 
 // Shared filters for the orders list and CSV export. Dates are IST calendar days.
-function applyOrderFilters(query, { statuses, paymentMethod, q, from, to }) {
+function applyOrderFilters(query, { statuses, paymentMethod, paidOnly, q, from, to }) {
   if (statuses?.length) query = query.in("status", statuses);
+  if (paidOnly) query = query.not("paid_at", "is", null);
   if (paymentMethod) query = query.eq("payment_method", paymentMethod);
   if (isDate(from)) query = query.gte("created_at", `${from}T00:00:00+05:30`);
   if (isDate(to)) query = query.lte("created_at", `${to}T23:59:59.999+05:30`);
@@ -55,7 +56,7 @@ export async function adminExportOrders(filters) {
 }
 
 export async function adminGetOrder(id) {
-  return unwrap(await createSupabaseServerClient().from("orders").select("*, order_items(*)").eq("id", id).maybeSingle());
+  return unwrap(await createSupabaseServerClient().from("orders").select("*, order_items(*, products(stock))").eq("id", id).maybeSingle());
 }
 
 // Everyone who has paid for an order, guests included, grouped by email.
@@ -63,6 +64,7 @@ export async function adminGetCustomers({ q } = {}) {
   const orders = unwrap(await createSupabaseServerClient().from("orders")
     .select("email, customer_name, phone, city, state, total_paise, status, user_id, created_at")
     .in("status", [...SALE_STATUSES, "refunded", "cancelled"])
+    .not("paid_at", "is", null)
     .order("created_at", { ascending: false }).limit(5000));
 
   const byEmail = new Map();

@@ -1,6 +1,7 @@
 "use server";
 
-import { attachRazorpayOrder, createPendingOrder, markOrderFailed, markOrderPaid, quoteCart, submitUpiReference, validateCustomer } from "@/src/lib/orders";
+import { sendUpiOrderPlacedEmail } from "@/src/lib/email";
+import { attachRazorpayOrder, createPendingOrder, getOrderForCustomer, markOrderFailed, markOrderPaid, quoteCart, submitUpiReference, validateCustomer } from "@/src/lib/orders";
 import { getPaymentMode } from "@/src/lib/payment-mode";
 import { createRazorpayOrder, razorpayKeyId, verifyPaymentSignature } from "@/src/lib/razorpay";
 import { getCurrentUser } from "@/src/lib/auth";
@@ -65,7 +66,10 @@ export async function placeUpiOrder({ lines, customer: input }) {
   try {
     const prepared = await prepareOrder(lines, input, "upi_manual");
     if (prepared.error) return prepared;
-    return { ok: true, url: `/orders/${prepared.order.order_number}?t=${prepared.order.access_token}` };
+    const { order_number: orderNumber, access_token: token } = prepared.order;
+    const full = await getOrderForCustomer(orderNumber, token);
+    if (full) await sendUpiOrderPlacedEmail(full); // link back to the payment page
+    return { ok: true, url: `/orders/${orderNumber}?t=${token}` };
   } catch (cause) {
     console.error(cause);
     return { error: "We couldn't place your order. Please try again in a moment." };

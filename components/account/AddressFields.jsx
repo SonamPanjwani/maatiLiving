@@ -15,7 +15,7 @@ export default function AddressFields({ address = {}, stateValue, onStateChange,
     <label className="field"><span>Area, landmark <small>optional</small></span><input name="addressLine2" defaultValue={address.line2 ?? ""} autoComplete="address-line2" /></label>
     <div className="field-row">
       <label className="field"><span>City</span><input name="city" defaultValue={address.city ?? ""} autoComplete="address-level2" required /></label>
-      <label className="field"><span>PIN code</span><input name="pincode" defaultValue={address.pincode ?? ""} inputMode="numeric" autoComplete="postal-code" maxLength={6} pattern="[1-9][0-9]{5}" required /></label>
+      <label className="field"><span>PIN code</span><input name="pincode" defaultValue={address.pincode ?? ""} inputMode="numeric" autoComplete="postal-code" maxLength={6} pattern="[1-9][0-9]{5}" title="6-digit PIN code" required /></label>
     </div>
     <label className="field"><span>State</span>
       <select name="state" autoComplete="address-level1" required {...stateProps}>

@@ -31,8 +31,8 @@ export default function UpiReferenceForm({ orderNumber, token, existingReference
   return <form action={formAction} className="account-form upi-ref-form">
     <input type="hidden" name="orderNumber" value={orderNumber} />
     <input type="hidden" name="token" value={token} />
-    <label className="field"><span>UPI transaction ID <small>12-digit UTR / reference no. from your payment app</small></span>
-      <input name="reference" type="text" inputMode="numeric" autoComplete="off" placeholder="e.g. 412345678901" required />
+    <label className="field"><span>UPI transaction ID <small>12-digit UTR from your payment app (under transaction details)</small></span>
+      <input name="reference" type="text" autoComplete="off" placeholder="e.g. 412345678901" required />
     </label>
     {state?.error && <p className="admin-error" role="alert">{state.error}</p>}
     <SubmitButton pendingLabel="Sending…">I've paid</SubmitButton>

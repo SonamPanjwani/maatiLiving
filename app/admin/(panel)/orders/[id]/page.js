@@ -14,7 +14,10 @@ const SAVED_MESSAGES = { 1: "Order updated.", refunded: "Refund issued through R
 export default async function AdminOrderPage({ params, searchParams }) {
   const order = await adminGetOrder(params.id);
   if (!order) notFound();
-  const editable = EDITABLE_STATUSES.includes(order.status);
+  // Only orders that were actually paid can change status here; a restocked cancellation stays closed.
+  const editable = EDITABLE_STATUSES.includes(order.status) && Boolean(order.paid_at) && !(order.status === "cancelled" && order.restocked);
+  // Pending UPI orders don't hold stock: warn before confirming if another order took it meanwhile.
+  const shortages = order.order_items.filter((item) => item.products && item.products.stock < item.quantity);
   const refundable = editable && order.razorpay_payment_id && !order.refund_id;
   const canRestock = ["cancelled", "refunded"].includes(order.status) && !order.restocked && Boolean(order.paid_at);
   const upiPending = order.payment_method === "upi_manual" && order.status === "pending";
@@ -64,6 +67,7 @@ export default async function AdminOrderPage({ params, searchParams }) {
             ? <p className="admin-note">Customer says they paid. Transaction ID: <strong className="upi-ref">{order.payment_reference}</strong>{order.payment_submitted_at && <> · {when(order.payment_submitted_at)}</>}</p>
             : <p className="admin-note">The customer hasn't entered a transaction ID yet. They may still send a screenshot on WhatsApp.</p>}
           <p className="admin-note"><strong>Open your own bank or UPI app</strong> (not the customer's screenshot) and find a payment of exactly {formatPrice(order.total_paise)}{order.payment_reference ? " with this transaction ID" : ""}. Fake screenshots and made-up transaction IDs are common. Only confirm once you've seen the money yourself.</p>
+          {shortages.map((item) => <p key={item.id} className="admin-error" role="alert">Only {item.products.stock} left of {item.product_name} (this order needs {item.quantity}). Another order may have taken it. Check before confirming.</p>)}
           <form action={confirmManualPayment}>
             <input type="hidden" name="id" value={order.id} />
             <ConfirmSubmit className="button button-dark" message={`Have you seen ${formatPrice(order.total_paise)} from this customer in your own bank/UPI app history? A screenshot or transaction ID alone isn't proof. Confirming marks ${order.order_number} paid and takes the items out of stock.`}>Confirm payment received</ConfirmSubmit>

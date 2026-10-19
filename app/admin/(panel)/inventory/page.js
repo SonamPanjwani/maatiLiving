@@ -39,7 +39,7 @@ export default async function InventoryPage({ searchParams }) {
                   <input type="hidden" name="id" value={product.id} />
                   <input type="hidden" name="back" value={back} />
                   <input type="number" name="stock" min="0" step="1" defaultValue={product.stock} aria-label={`Stock for ${product.name}`} className={product.stock <= LOW_STOCK_AT ? "is-low" : ""} />
-                  <SubmitButton className="admin-danger stock-save" pendingLabel="…">Save</SubmitButton>
+                  <SubmitButton className="stock-save" pendingLabel="…">Save</SubmitButton>
                 </form>
               </td>
             </tr>)}

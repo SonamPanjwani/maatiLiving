@@ -185,9 +185,12 @@ export async function updateOrderStatus(formData) {
   if (!ADMIN_ORDER_STATUSES.includes(status)) redirect(orderUrl(id, { error: "Choose a valid status." }));
 
   const supabase = createSupabaseServerClient();
-  const { data: before } = await supabase.from("orders").select("status").eq("id", id).single();
-  if (!before || !["paid", "shipped", "delivered", "cancelled"].includes(before.status)) {
-    redirect(orderUrl(id, { error: "Only paid orders can change status." }));
+  const { data: before } = await supabase.from("orders").select("status, paid_at, restocked").eq("id", id).single();
+  if (!before || !before.paid_at || !["paid", "shipped", "delivered", "cancelled"].includes(before.status)) {
+    redirect(orderUrl(id, { error: "Only paid orders can change status. For a UPI order, use Confirm payment received." }));
+  }
+  if (before.status === "cancelled" && before.restocked && status !== "cancelled") {
+    redirect(orderUrl(id, { error: "This cancelled order's items were already returned to stock, so it can't be reopened." }));
   }
 
   const update = { status };

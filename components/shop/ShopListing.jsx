@@ -18,7 +18,7 @@ export default function ShopListing({ eyebrow, title, intro, categories, activeS
             <p className="shop-count">{`${products.length} ${products.length === 1 ? "piece" : "pieces"}`}</p>
             <div className="product-grid">{products.map((product, index) => <ProductCard product={product} index={index} key={product.id} />)}</div>
           </>
-        : <div className="shop-empty"><p>Nothing here just yet — we're still finding the right makers.</p><Link className="text-link" href="/shop">See everything <ArrowUpRight size={15} /></Link></div>}
+        : <div className="shop-empty"><p>Nothing here just yet — we're still finding the right makers.</p>{activeSlug && <Link className="text-link" href="/shop">See everything <ArrowUpRight size={15} /></Link>}</div>}
     </section>
   </>;
 }

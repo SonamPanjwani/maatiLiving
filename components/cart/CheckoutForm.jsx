@@ -82,7 +82,9 @@ export default function CheckoutForm({ paymentMode, testMode, account = null, sh
     const lines = items.map(({ productId, quantity, price }) => ({ productId, quantity, price }));
 
     if (paymentMode === "whatsapp") {
+      setBusy(true);
       window.open(whatsappOrderUrl(form, items, subtotal, shippingFor(subtotal, form.state, shippingSettings)), "_blank", "noopener");
+      setTimeout(() => setBusy(false), 3000);
       return;
     }
 
@@ -195,7 +197,7 @@ export default function CheckoutForm({ paymentMode, testMode, account = null, sh
         <p className="checkout-secure">Next, you'll see our UPI ID and QR code. Pay with PhonePe, Google Pay, Paytm or any UPI app. We confirm your order once the payment reaches us.</p>
       </>}
       {paymentMode === "whatsapp" && <>
-        <button type="submit" className="button button-dark cart-checkout"><MessageCircle size={14} /> Send order on WhatsApp</button>
+        <button type="submit" className="button button-dark cart-checkout" disabled={busy}><MessageCircle size={14} /> {busy ? "Opening WhatsApp…" : "Send order on WhatsApp"}</button>
         <p className="checkout-secure">Your order opens in WhatsApp, ready to send. We'll reply with payment details and confirm your order.</p>
       </>}
       <Link className="text-link" href="/cart">Back to cart</Link>
