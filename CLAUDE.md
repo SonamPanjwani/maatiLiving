@@ -102,6 +102,7 @@ src/
 - **Payment modes** (`getPaymentMode()` in `src/lib/payment-mode.js`, decided by config): `razorpay` (keys + secret key) → `upi` (`NEXT_PUBLIC_UPI_ID` + secret key: order saved as `payment_method = 'upi_manual'`, customer pays via UPI intent/QR on the order page and submits a UTR, admin confirms with SQL `admin_confirm_manual_payment` which marks paid + decrements stock once) → `whatsapp` (checkout opens a prefilled WhatsApp order; nothing saved). A customer-entered UTR is never proof of payment: only the admin confirms.
 - Refunds: full only, via `refundPayment` (Razorpay API) in `refundOrder`; direct-UPI orders are refunded outside the site. Restocking goes through SQL `admin_restock_order` (admin-only, once per order via `orders.restocked`).
 - CSV export neutralises cells starting with = + - @ (spreadsheet formula injection).
+- **Cart ownership** (`CartProvider`): guests → localStorage `maati-cart-v1`; signed-in → `carts` row (`0006_carts.sql`, RLS own row) + local copy `maati-cart-v1:<userId>`. Owner is re-checked on every page change (browser Supabase client, `src/lib/supabase/browser.js`); on sign-in the guest cart merges in and is cleared; on sign-out the shown cart empties. Never trust cart prices (server re-quotes).
 - Secrets/env: `.env.local` (git-ignored). Document every new var in `.env.example`.
 
 ## Catalogue data model

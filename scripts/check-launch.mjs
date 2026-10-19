@@ -110,7 +110,7 @@ async function rest(path) {
 
 if (has("NEXT_PUBLIC_SUPABASE_URL") && secretKey) {
   try {
-    const tables = { categories: "0001", products: "0001", profiles: "0001", orders: "0002", addresses: "0003", settings: "0004" };
+    const tables = { categories: "0001", products: "0001", profiles: "0001", orders: "0002", addresses: "0003", settings: "0004", carts: "0006" };
     let schemaOk = true;
     for (const [table, migration] of Object.entries(tables)) {
       const { status } = await rest(`${table}?select=*&limit=1`);

@@ -210,6 +210,12 @@ Checkout picks how to take payment automatically, from what's in `.env.local`:
 
 When Razorpay is approved, add its keys. Checkout switches to Razorpay on its own, and existing UPI orders stay in admin as they are.
 
+## 12. Saved carts (signed-in customers)
+
+**SQL Editor → New query**: paste all of `supabase/migrations/0006_carts.sql` → **Run** (after 0005).
+
+Signed-in customers' carts are then saved to their account: the same cart on phone and laptop, and nobody else on the same browser sees it. Guests keep a cart in their browser; when they sign in, it's merged into their account's cart. Without this step carts still work, just per device.
+
 ## Troubleshooting
 
 | Problem | Fix |
