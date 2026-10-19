@@ -573,25 +573,28 @@ h2 em {
   font-size: clamp(3rem, 5vw, 5rem);
 }
 
+/* Number in its own column so a wrapped question stays aligned with its first line. */
 .questions p {
-  font: 400 clamp(2.1rem, 4vw, 4.6rem)/1.05 var(--font-fraunces), serif;
+  display: grid;
+  grid-template-columns: 65px 1fr;
+  align-items: baseline;
+  font: 400 clamp(2rem, 3.4vw, 3.9rem)/1.08 var(--font-fraunces), serif;
   margin: 0;
   padding: 1.2rem 0;
   border-bottom: 1px solid var(--line);
 }
 
 .questions p span {
-  display: inline-block;
-  font: 10px var(--font-work-sans);
+  font: 11px var(--font-work-sans);
+  letter-spacing: .1em;
   color: var(--turmeric);
-  width: 65px;
-  vertical-align: middle;
 }
 
 .questions strong {
   display: block;
   color: var(--madder);
-  font: italic 400 clamp(2.2rem, 4vw, 4.7rem)/1.05 var(--font-fraunces), serif;
+  font: italic 400 clamp(2.1rem, 3.5vw, 4rem)/1.08 var(--font-fraunces), serif;
+  padding-left: 65px;
   margin-top: 2.2rem;
 }
 
@@ -743,7 +746,8 @@ footer small {
   .story-visual { height: 100vw; margin-bottom: 3rem; }
   .questions { margin-top: 4rem; }
   .questions p { font-size: 2.2rem; padding: 1rem 0; }
-  .questions p span { width: 40px; }
+  .questions p { grid-template-columns: 40px 1fr; }
+  .questions strong { padding-left: 40px; }
 
   .final-cta { padding: 24vw 8vw; }
   .final-cta h2 { font-size: clamp(3.6rem, 15vw, 6rem); }
@@ -1239,8 +1243,11 @@ footer small {
    17. Shop, category and product pages
    ========================================================================== */
 
+/* Solid bar (inner pages, and the home page once scrolled). The hairline + soft shade keep it
+   distinct even over the dark sections (Beliefs, CTA, footer). */
 .navbar-solid {
   background: var(--charcoal);
+  box-shadow: 0 1px 0 rgba(237,228,211,.14), 0 6px 18px rgba(42,38,34,.22);
 }
 
 .store-main {

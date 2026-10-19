@@ -130,7 +130,7 @@ Palette (CSS custom properties on `:root`):
 
 Typography (self-hosted via next/font; CSS uses `var(--font-fraunces)` / `var(--font-work-sans)`, never the family names): **Fraunces** (serif, 400/500, real italics) for `h1–h3`, logo, large questions — tight negative letter-spacing, `<em>` italics in madder for emphasis. **Work Sans** (400/500/600) for body at 15px/1.6. Small uppercase labels use `.eyebrow` (10px, .19em tracking, turmeric).
 
-Patterns: `.section` / `.section-grid` (two-column, 10vw padding), `.section-heading`, `.body-copy`, `.button` + `.button-dark` / `.button-light`, `.text-link` (underlined uppercase with `ArrowUpRight`), numbered lists (`01`, `02`…), square corners, no rounded cards, no drop shadows except the floating WhatsApp button. One mobile breakpoint at **700px** (8vw gutters). Respect `prefers-reduced-motion`.
+Patterns: `.section` / `.section-grid` (two-column, 10vw padding), `.section-heading`, `.body-copy`, `.button` + `.button-dark` / `.button-light`, `.text-link` (underlined uppercase with `ArrowUpRight`), numbered lists (`01`, `02`…), square corners, no rounded cards, no drop shadows except the floating WhatsApp button and the solid navbar (owner asked for a shade so it never blends into the page). The home navbar starts transparent over the hero and turns solid on scroll (`Navbar` listens to scroll). One mobile breakpoint at **700px** (8vw gutters). Respect `prefers-reduced-motion`.
 
 ## Rule: keep the existing visual style
 
