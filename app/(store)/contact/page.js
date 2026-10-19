@@ -43,6 +43,10 @@ export default function ContactPage() {
         <p><V>{business.grievanceOfficer.name}</V><br /><a href={`mailto:${officerEmail}`}>{officerEmail}</a><br />We acknowledge complaints within 48 hours.</p>
       </div>
       <div>
+        <h2 className="eyebrow">WEBSITE HELP</h2>
+        <p>Trouble signing in, checking out or using the site? Write to <a href={`mailto:${business.techSupportEmail}`}>{business.techSupportEmail}</a>.</p>
+      </div>
+      <div>
         <h2 className="eyebrow">ABOUT YOUR ORDER</h2>
         <p>Track it in <Link href="/account">My account</Link> or with the link from your confirmation. See also <Link href="/shipping-policy">shipping</Link> and <Link href="/returns">returns & refunds</Link>.</p>
       </div>

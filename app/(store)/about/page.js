@@ -38,7 +38,7 @@ export default function AboutPage() {
 
     <section className="approach section">
       <div><p className="eyebrow">BEFORE WE SAY YES</p><h2>We ask a few questions.</h2></div>
-      <div className="questions">{QUESTIONS.map((question, i) => <p key={question}><span>0{i + 1}</span>{question}</p>)}<strong>Would we buy it for ourselves?</strong></div>
+      <div className="questions">{QUESTIONS.map((question, i) => <p key={question}><span>0{i + 1}</span>{question}</p>)}<strong><span className="questions-lead">And most importantly,</span>would we buy it for ourselves?</strong></div>
     </section>
 
     <section className="final-cta">

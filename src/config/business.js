@@ -5,13 +5,14 @@ export const business = {
   tradeName: "Maati Living",
   legalName: "TODO: registered business or proprietor name",
   address: {
-    line1: "TODO: street address",
-    city: "TODO: city",
-    state: "TODO: state",
-    pincode: "TODO: PIN",
+    line1: "Panjwani Heights, Behind Hotel Babylon Inn, Jail Road, Sai Nagar",
+    city: "Raipur",
+    state: "Chhattisgarh",
+    pincode: "494001", // as given by the owner — Raipur PINs usually start with 492; confirm before launch
   },
   gstin: null, // e.g. "27ABCDE1234F1Z5" once registered; leave null if not registered
-  jurisdictionCity: "TODO: city for courts (usually where the business is registered)",
+  jurisdictionCity: "Raipur",
+  techSupportEmail: "tech.maatiliving@gmail.com", // problems with the website itself (login, checkout, pages)
   // Required for Indian e-commerce (Consumer Protection (E-Commerce) Rules, 2020).
   grievanceOfficer: {
     name: "TODO: name of the person who handles complaints",
