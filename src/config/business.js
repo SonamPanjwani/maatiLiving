@@ -46,9 +46,12 @@ export const business = {
       ],
     },
     {
-      name: "TODO: third founder's name",
+      name: "Ankita",
       role: "Co-founder",
-      bio: ["TODO: a few lines in her own words, like the two above."],
+      bio: [
+        "With a postgraduate degree in education and a love for teaching little children, I've learned to appreciate creativity, patience and the beauty in everyday moments.",
+        "At Maati Living, I help shape product ideas and choices, focusing on creating thoughtful, practical products that bring warmth and meaning to everyday living.",
+      ],
     },
   ],
 };
