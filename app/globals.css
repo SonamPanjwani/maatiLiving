@@ -78,11 +78,15 @@ button {
   align-items: center;
 }
 
+/* Round logo on a cream disc: the brown lettering would vanish on the charcoal bars otherwise. */
 .logo img {
   display: block;
-  width: auto;
-  height: 36px;
-  max-width: 148px;
+  width: 58px;
+  height: 58px;
+  padding: 2px;
+  border-radius: 50%;
+  background: var(--cotton);
+  object-fit: contain;
 }
 
 .logo i {
@@ -677,6 +681,11 @@ footer .logo {
   color: var(--cotton);
 }
 
+footer .logo img {
+  width: 104px;
+  height: 104px;
+}
+
 .footer-brand p {
   font: 1.2rem/1.3 var(--font-fraunces), serif;
   margin-top: 2rem;
@@ -794,7 +803,7 @@ footer small {
   footer { display: block; padding: 15vw 8vw 5.5rem; } /* room for the floating WhatsApp button */
   .footer-links { gap: 3rem; margin: 4rem 0; }
   .floating-whatsapp { right: 15px; bottom: 15px; }
-  .logo img { height: 31px; max-width: 125px; }
+  .logo img { width: 48px; height: 48px; }
 }
 
 /* ==========================================================================
@@ -837,7 +846,8 @@ footer small {
 }
 
 .admin-bar .logo img {
-  height: 30px;
+  width: 46px;
+  height: 46px;
 }
 
 .admin-bar nav {
@@ -1257,8 +1267,8 @@ footer small {
 
 .admin-login-logo {
   display: block;
-  height: 34px;
-  width: auto;
+  height: 96px;
+  width: 96px;
   margin-bottom: 2.5rem;
 }
 

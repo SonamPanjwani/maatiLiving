@@ -18,6 +18,7 @@ export const metadata = {
   },
   description: "Handmade terracotta diyas and coconut shell pieces from Indian artisans. Natural, useful and beautifully made things for everyday life.",
   applicationName: siteConfig.name,
+  icons: { icon: siteConfig.logoUrl, apple: siteConfig.logoUrl },
   // No canonical/og:url here: metadata is inherited, so each page sets its own.
   openGraph: {
     type: "website",

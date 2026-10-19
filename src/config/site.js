@@ -4,8 +4,10 @@ export const siteConfig = {
   name: "Maati Living",
   tagline: "Thoughtfully chosen. Naturally better.",
   description: "Natural, useful and beautifully made things for everyday life.",
-  logoPublicId: "Logo",
-  logoUrl: "https://res.cloudinary.com/diyhsqkum/image/upload/v1789316692/Logo.png",
+  // Round logo (transparent PNG in maatiLiving/brand on Cloudinary), trimmed to the circle and sized for the web.
+  // Shown on a cream disc (see .logo img in globals.css) so the dark lettering stays readable on dark bars.
+  logoPublicId: "MAATI__3_-removebg-preview_3",
+  logoUrl: "https://res.cloudinary.com/fecxf6f2/image/upload/e_trim/w_240,c_fit/f_auto,q_auto/v1792444692/MAATI__3_-removebg-preview_3.png",
   // TODO: set NEXT_PUBLIC_WHATSAPP_NUMBER to the business number — digits only, with country code, e.g. 919876543210.
   whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "YOUR_WHATSAPP_NUMBER",
   instagramHandle: "@maatiliving",
