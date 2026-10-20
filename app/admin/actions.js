@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { indianStates } from "@/src/config/shop";
 import { assertAdmin } from "@/src/lib/auth";
 import { ORDER_EMAIL_COLUMNS, sendOrderEmails, sendShippedEmail } from "@/src/lib/email";
+import { rupeesToPaise } from "@/src/lib/books/money";
 import { isRazorpayConfigured, refundPayment } from "@/src/lib/razorpay";
 import { slugify } from "@/src/lib/slugify";
 import { createSupabaseServerClient } from "@/src/lib/supabase/server";
@@ -14,6 +15,7 @@ const text = (formData, key) => String(formData.get(key) ?? "").trim();
 function friendlyDbError(error) {
   if (error.code === "23505") return "That slug or SKU is already used by another item.";
   if (error.code === "23503") return "This category still has products in it — move or delete them first.";
+  if (error.code === "42501") return "Not authorised.";
   return error.message;
 }
 
@@ -65,22 +67,23 @@ export async function saveProduct(_prevState, formData) {
   const id = text(formData, "id");
   const name = text(formData, "name");
   const slug = slugify(text(formData, "slug") || name);
-  const price = Number(text(formData, "price"));
-  const stock = Number(text(formData, "stock") || 0);
+  const pricePaise = rupeesToPaise(text(formData, "price"));
+  // Stock is set only when the product is created (recorded as opening stock); afterwards use Adjust stock.
+  const stock = id ? null : Number(text(formData, "stock") || 0);
   const images = parseImages(formData.get("images"));
 
   if (!name) return { error: "Please give the product a name." };
   if (!slug) return { error: "Please give the product a slug (used in its web address)." };
   if (!text(formData, "categoryId")) return { error: "Please choose a category." };
-  if (!Number.isFinite(price) || price <= 0) return { error: "Price must be more than ₹0, e.g. 450." };
-  if (!Number.isInteger(stock) || stock < 0) return { error: "Stock must be a whole number, 0 or more." };
+  if (!Number.isInteger(pricePaise) || pricePaise <= 0) return { error: "Price must be more than ₹0, e.g. 450 or 450.50." };
+  if (!id && (!Number.isInteger(stock) || stock < 0)) return { error: "Initial stock must be a whole number, 0 or more." };
 
   const row = {
     name,
     slug,
     category_id: text(formData, "categoryId"),
-    price_paise: Math.round(price * 100),
-    stock,
+    price_paise: pricePaise,
+    ...(id ? {} : { stock }),
     short_description: text(formData, "shortDescription"),
     sourcing_note: text(formData, "sourcingNote"),
     materials: text(formData, "materials").split(/[\n,]/).map((item) => item.trim()).filter(Boolean),
@@ -113,8 +116,14 @@ export async function saveProduct(_prevState, formData) {
 
 export async function deleteProduct(formData) {
   await assertAdmin();
-  const { error } = await createSupabaseServerClient().from("products").delete().eq("id", text(formData, "id"));
-  if (error) throw new Error(friendlyDbError(error));
+  const id = text(formData, "id");
+  const { error } = await createSupabaseServerClient().from("products").delete().eq("id", id);
+  if (error) {
+    const message = ["23001", "23503"].includes(error.code)
+      ? "This product has stock or order history, so it can't be deleted. Untick \"Visible in shop\" to hide it instead."
+      : friendlyDbError(error);
+    redirect(`/admin/products/${id}?error=${encodeURIComponent(message)}`);
+  }
   revalidateStorefront();
   redirect("/admin/products");
 }
@@ -293,28 +302,58 @@ export async function restockOrder(formData) {
 // Inventory
 // ---------------------------------------------------------------------------
 
-export async function updateStock(formData) {
+const ADJUST_REASONS = ["damaged", "lost", "sample", "recount", "other"];
+
+// Manual stock change (+/−) with a reason: one ledger movement, never below zero (enforced in SQL).
+export async function adjustStock(formData) {
   await assertAdmin();
-  const stock = Number(text(formData, "stock"));
-  const back = text(formData, "back") || "/admin/inventory";
-  if (!Number.isInteger(stock) || stock < 0) redirect(`${back}${back.includes("?") ? "&" : "?"}error=${encodeURIComponent("Stock must be a whole number, 0 or more.")}`);
-  const { error } = await createSupabaseServerClient().from("products").update({ stock }).eq("id", text(formData, "id"));
-  if (error) redirect(`${back}${back.includes("?") ? "&" : "?"}error=${encodeURIComponent(friendlyDbError(error))}`);
+  const id = text(formData, "id");
+  const back = `/admin/inventory/${id}`;
+  const direction = text(formData, "direction") === "remove" ? -1 : 1;
+  const qty = Number(text(formData, "qty"));
+  const reason = text(formData, "reason");
+  if (!Number.isInteger(qty) || qty <= 0) redirect(`${back}?error=${encodeURIComponent("Enter how many pieces, a whole number above 0.")}`);
+  if (!ADJUST_REASONS.includes(reason)) redirect(`${back}?error=${encodeURIComponent("Choose a reason.")}`);
+  const { error } = await createSupabaseServerClient().rpc("books_adjust_stock", {
+    p_product_id: id, p_qty_change: direction * qty, p_reason: reason, p_note: text(formData, "note") || null,
+  });
+  if (error) redirect(`${back}?error=${encodeURIComponent(friendlyDbError(error))}`);
   revalidateStorefront();
-  redirect(back);
+  redirect(`${back}?saved=adjusted`);
+}
+
+// Manual cost price (until purchases set it by weighted average). Blank clears it.
+export async function setCostPrice(formData) {
+  await assertAdmin();
+  const id = text(formData, "id");
+  const back = `/admin/inventory/${id}`;
+  const cost = rupeesToPaise(text(formData, "cost"));
+  if (Number.isNaN(cost)) redirect(`${back}?error=${encodeURIComponent("Cost must be an amount in rupees, e.g. 180 or 180.50.")}`);
+  const { error } = await createSupabaseServerClient().rpc("books_set_cost_price", { p_product_id: id, p_cost_paise: cost });
+  if (error) redirect(`${back}?error=${encodeURIComponent(friendlyDbError(error))}`);
+  revalidatePath("/admin", "layout");
+  redirect(`${back}?saved=cost`);
+}
+
+// Per-product low-stock alert level (blank = shop default).
+export async function setLowStockThreshold(formData) {
+  await assertAdmin();
+  const id = text(formData, "id");
+  const back = `/admin/inventory/${id}`;
+  const raw = text(formData, "threshold");
+  const threshold = raw === "" ? null : Number(raw);
+  if (threshold !== null && (!Number.isInteger(threshold) || threshold < 0)) redirect(`${back}?error=${encodeURIComponent("Low-stock level must be a whole number, or blank.")}`);
+  const { error } = await createSupabaseServerClient().from("products").update({ low_stock_threshold: threshold }).eq("id", id);
+  if (error) redirect(`${back}?error=${encodeURIComponent(friendlyDbError(error))}`);
+  revalidatePath("/admin", "layout");
+  redirect(`${back}?saved=threshold`);
 }
 
 // ---------------------------------------------------------------------------
 // Settings
 // ---------------------------------------------------------------------------
 
-// Rupee input → paise integer; blank → null.
-function rupeesToPaise(value) {
-  const raw = String(value ?? "").trim();
-  if (raw === "") return null;
-  const rupees = Number(raw);
-  return Number.isFinite(rupees) && rupees >= 0 ? Math.round(rupees * 100) : NaN;
-}
+// Rupee input → paise: rupeesToPaise from src/lib/books/money (exact, no floats; blank → null, invalid → NaN).
 
 export async function saveShippingSettings(_prevState, formData) {
   await assertAdmin();

@@ -100,7 +100,9 @@ export async function adminGetDashboard({ lowStockAt = 5 } = {}) {
       .in("status", SALE_STATUSES).gte("paid_at", since).then(unwrap),
     supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "paid").then(({ count }) => count ?? 0),
     supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending").eq("payment_method", "upi_manual").not("payment_reference", "is", null).then(({ count }) => count ?? 0),
-    supabase.from("products").select("id, name, stock, is_available").lte("stock", lowStockAt).order("stock").limit(12).then(unwrap),
+    // Per-product alert level (products.low_stock_threshold), else the shop default.
+    supabase.from("products").select("id, name, stock, is_available, low_stock_threshold").order("stock").then(unwrap)
+      .then((rows) => rows.filter((row) => row.stock <= (row.low_stock_threshold ?? lowStockAt)).slice(0, 12)),
     supabase.from("orders").select("id, order_number, status, payment_method, payment_reference, customer_name, total_paise, created_at")
       .or("status.in.(paid,shipped,delivered,cancelled,refunded),and(status.eq.pending,payment_method.eq.upi_manual)")
       .order("created_at", { ascending: false }).limit(8).then(unwrap),

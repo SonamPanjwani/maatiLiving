@@ -110,7 +110,7 @@ async function rest(path) {
 
 if (has("NEXT_PUBLIC_SUPABASE_URL") && secretKey) {
   try {
-    const tables = { categories: "0001", products: "0001", profiles: "0001", orders: "0002", addresses: "0003", settings: "0004", carts: "0006" };
+    const tables = { categories: "0001", products: "0001", profiles: "0001", orders: "0002", addresses: "0003", settings: "0004", carts: "0006", vendors: "0007", vendor_products: "0007", stock_movements: "0007", audit_log: "0007" };
     let schemaOk = true;
     for (const [table, migration] of Object.entries(tables)) {
       const { status } = await rest(`${table}?select=*&limit=1`);
@@ -146,6 +146,34 @@ if (has("NEXT_PUBLIC_SUPABASE_URL") && secretKey) {
   }
 } else {
   warn("Skipped database checks (Supabase URL / secret key not set).");
+}
+
+// ---------------------------------------------------------------- admin guards (static)
+// Every admin page must sit under app/admin/(panel) (layout runs requireAdminPage) or be the login page;
+// every exported server action / route handler under app/admin must call assertAdmin() or getCurrentAdmin().
+{
+  const { readdirSync, statSync } = await import("node:fs");
+  const walk = (dir) => readdirSync(dir).flatMap((name) => {
+    const full = new URL(`${name}${statSync(new URL(name, dir)).isDirectory() ? "/" : ""}`, dir);
+    return statSync(full).isDirectory() ? walk(full) : [full];
+  });
+  const adminDir = new URL("app/admin/", root);
+  const files = walk(adminDir).map((url) => decodeURIComponent(url.pathname).replace(/^.*?app\/admin\//, "app/admin/"));
+  const problems = [];
+  for (const file of files) {
+    if (/\/page\.js$/.test(file) && !file.startsWith("app/admin/(panel)/") && file !== "app/admin/login/page.js") problems.push(`${file}: admin page outside (panel) — no admin guard`);
+    if (/actions\.js$|route\.js$/.test(file)) {
+      const source = read(file);
+      const exported = [...source.matchAll(/export async function (\w+)\s*\(/g)].map((m) => m[1]);
+      for (const name of exported) {
+        const body = source.slice(source.indexOf(`export async function ${name}`)).split(/\nexport /)[0];
+        const isAuthAction = ["signIn", "signOut"].includes(name);
+        if (!isAuthAction && !/assertAdmin\(\)|getCurrentAdmin\(\)/.test(body)) problems.push(`${file}: ${name}() has no admin check`);
+      }
+    }
+  }
+  if (problems.length) block(`Admin guard missing:\n${problems.map((p) => `      ${p}`).join("\n")}`);
+  else ok(`Admin guards present on all /admin pages, actions and routes (${files.length} files checked)`);
 }
 
 // ---------------------------------------------------------------- report

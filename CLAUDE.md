@@ -13,7 +13,7 @@ Brand voice: warm, plain, unhurried. Short sentences. Natural materials, Indian 
 - Plain global CSS in `app/globals.css` — no Tailwind, no CSS modules
 - Path alias: `@/*` → project root (`jsconfig.json`)
 
-Commands: `npm run dev`, `npm run build`, `npm start`. No tests or linter config yet.
+Commands: `npm run dev`, `npm run build`, `npm start`, `npm test`, `npm run check:launch`.
 
 ## Layout
 
@@ -77,6 +77,7 @@ src/
   lib/email.js         server-only: optional Resend order emails (no-op without RESEND_API_KEY)
   lib/order-status.js  STATUS_LABELS, adminStatusLabel(order), ORDER_TABS (admin list + CSV export)
   lib/payment-mode.js  server-only getPaymentMode(): razorpay | upi | whatsapp
+  lib/books/           data.js (admin reads), money.js (rupees⇄paise), vendors.js (validateVendor)
   config/payments.js   upiConfig (NEXT_PUBLIC_UPI_ID / _PAYEE_NAME), isUpiConfigured, upiPayUrl()
   lib/settings.js      getShippingSettings (public read of settings.shipping, falls back to defaults)
   lib/validation.js    clean, phone/email checks, validateAddress (shared by checkout + saved addresses)
@@ -103,6 +104,8 @@ src/
 - Refunds: full only, via `refundPayment` (Razorpay API) in `refundOrder`; direct-UPI orders are refunded outside the site. Restocking goes through SQL `admin_restock_order` (admin-only, once per order via `orders.restocked`).
 - CSV export neutralises cells starting with = + - @ (spreadsheet formula injection).
 - **Cart ownership** (`CartProvider`): guests → localStorage `maati-cart-v1`; signed-in → `carts` row (`0006_carts.sql`, RLS own row) + local copy `maati-cart-v1:<userId>`. Owner is re-checked on every page change (browser Supabase client, `src/lib/supabase/browser.js`); on sign-in the guest cart merges in and is cleared; on sign-out the shown cart empties. Never trust cart prices (server re-quotes).
+- **Books / stock ledger** (`0007_books_foundation.sql`): `products.stock` changes only inside approved SQL functions (`_stock_move`, called by `books_adjust_stock`, the order functions, later purchases); a trigger blocks any other stock UPDATE. Every stock/money function is one transaction and RAISEs on failure (never "return an error code" after writing). New product initial stock → `opening_stock` movement via trigger. `order_items.unit_cost_paise` snapshots cost when an order is paid. `audit_log` (trigger `audit_row`) records `auth.uid()` for admin writes, `actor_kind = 'system'` for service-role writes. Vendors are archived, never deleted. Books actions live in `app/admin/(panel)/books/actions.js` (assertAdmin in every one); reads in `src/lib/books/data.js`; money parsing `src/lib/books/money.js` (no floats).
+- **Tests:** `npm test` (node:test). `tests/db/*` boot PGlite with migrations (`tests/db/harness.mjs`); `tests/db/order-functions-regression.test.mjs` proves rewritten order functions keep identical stock results. Helpers imported by unit tests use relative `.js` imports (Node can't resolve `@/`). Demo data lives in `supabase/demo/` (never migrations).
 - Secrets/env: `.env.local` (git-ignored). Document every new var in `.env.example`.
 
 ## Catalogue data model

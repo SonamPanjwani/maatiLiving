@@ -1,47 +1,45 @@
-import { updateStock } from "@/app/admin/actions";
-import SubmitButton from "@/components/admin/SubmitButton";
-import { adminGetProducts } from "@/src/lib/admin-catalog";
+import { booksGetInventory } from "@/src/lib/books/data";
 import { formatPrice } from "@/src/lib/format";
-
-const LOW_STOCK_AT = 5;
 
 export default async function InventoryPage({ searchParams }) {
   const lowOnly = searchParams?.low === "1";
-  const all = await adminGetProducts();
-  const products = (lowOnly ? all.filter((product) => product.stock <= LOW_STOCK_AT) : all).sort((a, b) => a.stock - b.stock || a.name.localeCompare(b.name));
-  const back = lowOnly ? "/admin/inventory?low=1" : "/admin/inventory";
+  const all = await booksGetInventory();
+  const products = (lowOnly ? all.filter((product) => product.stock <= product.lowStockAt) : all)
+    .sort((a, b) => a.stock - b.stock || a.name.localeCompare(b.name));
   const totalUnits = all.reduce((sum, product) => sum + product.stock, 0);
-  const stockValue = all.reduce((sum, product) => sum + product.stock * product.price, 0);
+  const valueAtPrice = all.reduce((sum, product) => sum + product.valueAtPricePaise, 0);
+  const costed = all.filter((product) => product.valueAtCostPaise != null);
+  const valueAtCost = costed.reduce((sum, product) => sum + product.valueAtCostPaise, 0);
+  const missingCost = all.length - costed.length;
 
   return <>
     <div className="admin-heading">
       <div><p className="eyebrow">CATALOGUE</p><h1>Inventory</h1></div>
-      <p className="admin-note">{totalUnits} units in stock · {formatPrice(stockValue)} at selling price</p>
+      <p className="admin-note">
+        {totalUnits} units · {formatPrice(valueAtPrice)} at selling price · {formatPrice(valueAtCost)} at cost
+        {missingCost > 0 && <><br />{missingCost} {missingCost === 1 ? "product has" : "products have"} no cost price yet</>}
+      </p>
     </div>
-    {searchParams?.error && <p className="admin-error" role="alert">{searchParams.error}</p>}
 
     <nav className="category-nav admin-tabs" aria-label="Filter"><ul>
       <li><a href="/admin/inventory" className={!lowOnly ? "is-active" : ""} aria-current={!lowOnly ? "page" : undefined}>All products</a></li>
-      <li><a href="/admin/inventory?low=1" className={lowOnly ? "is-active" : ""} aria-current={lowOnly ? "page" : undefined}>Low stock ({LOW_STOCK_AT} or fewer)</a></li>
+      <li><a href="/admin/inventory?low=1" className={lowOnly ? "is-active" : ""} aria-current={lowOnly ? "page" : undefined}>Low stock</a></li>
     </ul></nav>
 
     {products.length === 0
       ? <p className="admin-empty">{lowOnly ? "Nothing is running low." : "No products yet."}</p>
-      : <table className="admin-table">
-          <thead><tr><th>Product</th><th>Category</th><th className="num">Price</th><th>Stock</th></tr></thead>
+      : <table className="admin-table table-cards">
+          <thead><tr><th>Product</th><th className="num">Stock</th><th className="num">Cost</th><th className="num">Price</th><th className="num">Margin</th><th className="num">Value at cost</th><th>Preferred vendor</th><th /></tr></thead>
           <tbody>
             {products.map((product) => <tr key={product.id}>
-              <td><a href={`/admin/products/${product.id}`}><strong>{product.name}</strong></a><small>{product.sku}{!product.available && " · Hidden"}</small></td>
-              <td>{product.category?.name ?? "—"}</td>
-              <td className="num">{formatPrice(product.price)}</td>
-              <td>
-                <form action={updateStock} className="stock-form">
-                  <input type="hidden" name="id" value={product.id} />
-                  <input type="hidden" name="back" value={back} />
-                  <input type="number" name="stock" min="0" step="1" defaultValue={product.stock} aria-label={`Stock for ${product.name}`} className={product.stock <= LOW_STOCK_AT ? "is-low" : ""} />
-                  <SubmitButton className="stock-save" pendingLabel="…">Save</SubmitButton>
-                </form>
-              </td>
+              <td data-label="Product"><a href={`/admin/inventory/${product.id}`}><strong>{product.name}</strong></a><small>{[product.category, product.sku, !product.available && "Hidden"].filter(Boolean).join(" · ")}</small></td>
+              <td data-label="Stock" className={`num ${product.stock <= product.lowStockAt ? "admin-warn" : ""}`}>{product.stock}{product.stock <= product.lowStockAt && <small>low (≤ {product.lowStockAt})</small>}</td>
+              <td data-label="Cost" className="num">{product.costPaise != null ? formatPrice(product.costPaise) : <span className="muted">not set</span>}</td>
+              <td data-label="Price" className="num">{formatPrice(product.pricePaise)}</td>
+              <td data-label="Margin" className="num">{product.marginPct != null ? `${product.marginPct}%` : <span className="muted">—</span>}</td>
+              <td data-label="Value at cost" className="num">{product.valueAtCostPaise != null ? formatPrice(product.valueAtCostPaise) : <span className="muted">—</span>}</td>
+              <td data-label="Preferred vendor">{product.preferredVendor ? <a href={`/admin/books/vendors/${product.preferredVendor.id}`}>{product.preferredVendor.name}</a> : <span className="muted">—</span>}</td>
+              <td className="table-action"><a className="stock-save" href={`/admin/inventory/${product.id}`}>Adjust</a></td>
             </tr>)}
           </tbody>
         </table>}

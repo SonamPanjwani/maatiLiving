@@ -216,6 +216,25 @@ When Razorpay is approved, add its keys. Checkout switches to Razorpay on its ow
 
 Signed-in customers' carts are then saved to their account: the same cart on phone and laptop, and nobody else on the same browser sees it. Guests keep a cart in their browser; when they sign in, it's merged into their account's cart. Without this step carts still work, just per device.
 
+## 13. Books: stock ledger and vendors (Phase 1)
+
+**Before running 0007:**
+1. **Take a backup.** Supabase → Database → Backups (Pro plan), or Project Settings → Database → download a dump. On the free plan, at least export your orders CSV from /admin and note each product's stock.
+2. **Run it on a dev/test Supabase project first**, check /admin → Books and Inventory, then run it on the live project.
+
+Then **SQL Editor → New query** → paste all of `supabase/migrations/0007_books_foundation.sql` → **Run**.
+
+What changes:
+- Every stock change is recorded in a stock ledger (`stock_movements`). Stock can no longer be typed in directly: use **Inventory → product → Adjust stock** (with a reason). A new product's initial stock is recorded as opening stock.
+- Existing stock is recorded as "opening stock". Cost prices start empty; set them per product in Inventory (purchases will set them automatically later).
+- Paid orders remember each item's cost at the time of sale (for margins).
+- **Books → Vendors**: add vendors, link the products they supply, mark a preferred vendor, archive (never delete).
+- An audit log records who changed what.
+
+**Demo data (test project only):** `supabase/demo/books_demo_seed.sql` adds two "DEMO" vendors; the removal SQL is at the bottom of that file. Never run it on the live project.
+
+**Tests:** `npm test` runs the database tests (real Postgres in-process) and unit tests.
+
 ## Troubleshooting
 
 | Problem | Fix |

@@ -28,7 +28,9 @@ export default function ProductForm({ product, categories }) {
           </select>
         </label>
         <label className="field"><span>Price (₹)</span><input name="price" type="number" min="1" step="1" defaultValue={p.price != null ? p.price / 100 : ""} required /></label>
-        <label className="field"><span>Stock</span><input name="stock" type="number" min="0" step="1" defaultValue={p.stock ?? 0} required /></label>
+        {p.id
+          ? <div className="field"><span>Stock</span><p className="stock-readonly"><strong>{p.stock}</strong> <a className="inline-link" href={`/admin/inventory/${p.id}`}>Adjust stock</a></p></div>
+          : <label className="field"><span>Initial stock</span><input name="stock" type="number" min="0" step="1" defaultValue={0} required /></label>}
       </div>
       <div className="field-row">
         <label className="field"><span>Slug <small>web address — leave blank to generate</small></span><input name="slug" defaultValue={p.slug} /></label>

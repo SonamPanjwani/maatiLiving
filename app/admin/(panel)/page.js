@@ -31,7 +31,7 @@ export default async function AdminDashboard() {
       <div className="kpi"><span className="kpi-label">Today</span><span className="kpi-value">{formatPrice(data.today.revenuePaise)}</span><span className="kpi-note">{plural(data.today.orders, "order")}</span></div>
       <div className="kpi"><span className="kpi-label">Last 7 days</span><span className="kpi-value">{formatPrice(data.week.revenuePaise)}</span><span className="kpi-note">{plural(data.week.orders, "order")}</span></div>
       <a className="kpi kpi-link" href="/admin/orders?tab=to-ship"><span className="kpi-label">Waiting to ship</span><span className="kpi-value">{data.toShip}</span><span className="kpi-note">Open orders →</span></a>
-      <a className="kpi kpi-link" href="/admin/inventory?low=1"><span className="kpi-label">Low stock</span><span className="kpi-value">{data.lowStock.length}</span><span className="kpi-note">{LOW_STOCK_AT} or fewer left →</span></a>
+      <a className="kpi kpi-link" href="/admin/inventory?low=1"><span className="kpi-label">Low stock</span><span className="kpi-value">{data.lowStock.length}</span><span className="kpi-note">At or below their alert level →</span></a>
     </section>
 
     <section className="admin-card"><RevenueChart days={data.days} /></section>
@@ -62,7 +62,7 @@ export default async function AdminDashboard() {
 
       <section className="admin-card">
         <h2 className="eyebrow">LOW STOCK</h2>
-        {data.lowStock.length === 0 ? <p className="admin-note">Everything has more than {LOW_STOCK_AT} in stock.</p> : <table className="admin-table">
+        {data.lowStock.length === 0 ? <p className="admin-note">Nothing is at or below its low-stock alert level.</p> : <table className="admin-table">
           <tbody>{data.lowStock.map((product) => <tr key={product.id}>
             <td><a href={`/admin/products/${product.id}`}><strong>{product.name}</strong></a>{!product.is_available && <small>Hidden</small>}</td>
             <td className={`num ${product.stock === 0 ? "admin-warn" : ""}`}>{product.stock === 0 ? "Sold out" : `${product.stock} left`}</td>

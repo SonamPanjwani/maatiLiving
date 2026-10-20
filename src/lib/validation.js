@@ -1,4 +1,4 @@
-import { indianStates } from "@/src/config/shop";
+import { indianStates } from "../config/shop.js";
 
 export const clean = (value, max = 200) => String(value ?? "").trim().replace(/\s+/g, " ").slice(0, max);
 
