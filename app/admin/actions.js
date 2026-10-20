@@ -329,6 +329,8 @@ export async function setCostPrice(formData) {
   const back = `/admin/inventory/${id}`;
   const cost = rupeesToPaise(text(formData, "cost"));
   if (Number.isNaN(cost)) redirect(`${back}?error=${encodeURIComponent("Cost must be an amount in rupees, e.g. 180 or 180.50.")}`);
+  // ₹0 would make every sale look like 100% margin; blank (null) clears the cost instead.
+  if (cost === 0) redirect(`${back}?error=${encodeURIComponent("Cost price must be more than ₹0. Leave it blank if you don't know it yet.")}`);
   const { error } = await createSupabaseServerClient().rpc("books_set_cost_price", { p_product_id: id, p_cost_paise: cost });
   if (error) redirect(`${back}?error=${encodeURIComponent(friendlyDbError(error))}`);
   revalidatePath("/admin", "layout");

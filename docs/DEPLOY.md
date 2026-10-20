@@ -10,6 +10,10 @@ The order to do things in. Allow an afternoon, plus Razorpay KYC time, which can
 4. Set delivery charges in **/admin → Delivery**.
 5. `npm run build` must succeed.
 
+## Rule for every update: migration first, then code
+
+When an update includes a new file in `supabase/migrations/`, **run that SQL in Supabase before deploying (pushing) the code**. New code expects the new tables/columns: if the code goes live first, pages that use them (e.g. admin Inventory before 0007) error until the migration is run. Migrations are written so the *old* code keeps working after them, so "SQL first, then push" is always safe.
+
 ## 1. Put the code on GitHub
 
 1. Create a **private** repository on [github.com](https://github.com/new), e.g. `maati-living`.

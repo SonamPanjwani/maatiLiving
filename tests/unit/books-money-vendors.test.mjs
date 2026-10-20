@@ -41,3 +41,13 @@ test("validateVendor: normalises and validates like the database", () => {
   assert.match(validateVendor({ name: "X Y", openingBalance: "12.345" }).error, /Opening balance/);
   assert.equal(validateVendor({ name: "X Y", openingBalance: "-500" }).row.opening_balance_paise, -50000, "advance allowed");
 });
+
+import { formatPrice } from "../../src/lib/format.js";
+
+test("formatPrice shows paise only when non-zero, never rounds", () => {
+  assert.equal(formatPrice(45000), "₹450");
+  assert.equal(formatPrice(25050), "₹250.50");
+  assert.equal(formatPrice(5), "₹0.05");
+  assert.equal(formatPrice(12345600), "₹1,23,456");
+  assert.equal(formatPrice(-25050), "-₹250.50");
+});

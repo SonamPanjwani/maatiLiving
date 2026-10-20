@@ -95,7 +95,8 @@ src/
 - **Admin security is three layers — keep all three for any new admin feature:** middleware (signed in) → `(panel)/layout.js` `requireAdminPage()` (role = admin) → `assertAdmin()` at the top of every server action / route handler. The database enforces the same through RLS (`public.is_admin()`).
 - Roles change only via SQL (`update profiles set role = 'admin' …`); there is deliberately no UI or policy for it.
 - Storefront reads use the cookie-free public client so pages stay static; admin mutations call `revalidatePath("/", "layout")`.
-- Prices are integers in **paise**; display with `formatPrice`.
+- Prices are integers in **paise**; display with `formatPrice` (whole rupees without decimals, otherwise exact paise, never rounded).
+- **Deploy order:** run any new migration in Supabase *before* pushing code that uses it (docs/DEPLOY.md). Pending for the next migration (0008): make `books_set_cost_price` reject 0 in SQL too (the app already does).
 - **Payments:** never trust browser prices. `quoteCart` re-reads price/stock; `startCheckout` refuses if anything changed; orders are paid only via `markOrderPaid` (SQL `mark_order_paid`, idempotent, decrements stock once) after a verified Razorpay signature (checkout handler or webhook). `mark_order_paid` is executable by `service_role` only.
 - The secret-key client (`src/lib/supabase/admin.js`) is for guest checkout, payment confirmation, order lookups by access token and `claim_guest_orders` only; admin and account screens use the session client so RLS applies.
 - **Customer data:** account pages filter by `user_id = user.id` explicitly in addition to RLS (admins' RLS would otherwise see every order). Customers can update only `profiles.full_name`/`phone` (column-level grant) — never `role`. Post-login redirects go through `safeNextPath`.

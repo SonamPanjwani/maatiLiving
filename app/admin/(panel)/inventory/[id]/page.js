@@ -78,7 +78,7 @@ export default async function InventoryProductPage({ params, searchParams }) {
         <form action={setCostPrice} className="admin-form books-side-block">
           <h2 className="eyebrow">COST PRICE</h2>
           <input type="hidden" name="id" value={product.id} />
-          <label className="field"><span>Cost per piece (₹) <small>what it costs you; blank = not set</small></span><input name="cost" inputMode="decimal" defaultValue={paiseToRupeeInput(product.costPaise)} placeholder="e.g. 180" /></label>
+          <label className="field"><span>Cost per piece (₹) <small>what it costs you; blank = not set</small></span><input name="cost" type="number" min="0.01" step="0.01" inputMode="decimal" defaultValue={paiseToRupeeInput(product.costPaise)} placeholder="e.g. 180" /></label>
           <SubmitButton>Save cost</SubmitButton>
           <p className="admin-note">Purchases will update this automatically (weighted average) once you receive stock.</p>
         </form>
