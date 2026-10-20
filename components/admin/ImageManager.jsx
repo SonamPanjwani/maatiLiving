@@ -50,7 +50,7 @@ export default function ImageManager({ name = "images", initialImages = [], fold
         >
           {({ open }) => <button type="button" className="admin-upload" onClick={() => open()}><ImagePlus size={16} />{multiple ? (images.length ? "Add more photos" : "Upload photos") : (images.length ? "Replace photo" : "Upload photo")}</button>}
         </CldUploadWidget>
-      : <p className="admin-note">Photo uploads need NEXT_PUBLIC_CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET in .env.local.</p>}
+      : <p className="admin-note">Photo uploads aren't switched on yet. Ask your developer to add the Cloudinary upload keys.</p>}
     {multiple && images.length > 1 && <p className="admin-note">The first photo is the cover. Use ★ to make a photo the cover, arrows to reorder.</p>}
   </div>;
 }

@@ -235,6 +235,26 @@ What changes:
 
 **Tests:** `npm test` runs the database tests (real Postgres in-process) and unit tests.
 
+## 14. Books: purchases, receiving and bills (Phase 2)
+
+**Order matters: run the SQL first, then deploy the code** (the new pages need the new tables).
+
+1. Take a backup (same as §13) and run it on the dev/test project first.
+2. **SQL Editor → New query** → paste all of `supabase/migrations/0008_books_purchases.sql` → **Run**. It should say "Success. No rows returned".
+3. `npm run check:launch` should no longer list `purchases` / `purchase_items` as missing.
+
+**Bill PDFs (one Cloudinary setting).** Bill photos and PDFs are uploaded as *private* files: nobody can open them without a link the site signs for an admin. Photos and PDF pages (shown as images) work straight away. To also open the **original PDF file**, switch on PDF delivery once:
+Cloudinary → ⚙ **Settings** → **Security** → tick **"Allow delivery of PDF and ZIP files"** → **Save**. (Until then "Original PDF" shows an error, but every page still opens as an image.)
+
+What's new (/admin → Books → **Purchases**):
+- **New purchase**: choose the vendor, add products (their last price fills in), shipping/discount/tax, the vendor's bill number/date, and photos or PDFs of the bill. "Pay by" fills itself from the bill date + the vendor's payment terms.
+- **Save as draft** or **Save & mark ordered**. Share the order on WhatsApp (quantities only, or with prices) or print it / save as PDF.
+- **Receive items**: enter what actually arrived (can be in parts). Stock goes up, and each product's cost price becomes the average of the old stock and the new delivery, *including its share of shipping and discount*. More than ordered asks for a confirmation and the bill then counts the extra pieces.
+- After anything is received a purchase can't be cancelled or have its items changed; fix stock with **Adjust stock** and write why in the purchase's notes. Bill details, files and notes can always be updated.
+- Vendor pages show their purchases and a balance = opening balance + received/billed purchases (payments come in Phase 3).
+
+**Demo data (test project only):** run `supabase/demo/books_demo_seed.sql` again — it now also adds three DEMO purchases (one draft, two ordered) to try receiving. Removal SQL is at the bottom.
+
 ## Troubleshooting
 
 | Problem | Fix |
@@ -245,5 +265,7 @@ What changes:
 | Upload widget says "Invalid signature" | API secret is wrong or belongs to a different Cloudinary account than the cloud name. |
 | Checkout says "Online payment isn't switched on yet" | One of `SUPABASE_SECRET_KEY`, `NEXT_PUBLIC_RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` is missing; restart dev server. |
 | "We couldn't start the payment" | Razorpay key/secret mismatch (test key with live secret, or a typo), or 0002 SQL not run. The terminal running `npm run dev` shows the exact error. |
-| Order pages or /admin show "column … does not exist" | A migration hasn't been run. Run 0001 → 0004 in order. |
+| Order pages or /admin show "column … does not exist" | A migration hasn't been run. Run them in number order (0001 → 0008). |
+| Books → Purchases crashes or says a table doesn't exist | 0008 hasn't been run on this Supabase project (§14). |
+| A bill thumbnail is blank / "Original PDF" shows an error | Cloudinary PDF delivery is off (§14), or `CLOUDINARY_API_SECRET` is missing on the server. |
 | Paid but order shows "Confirming payment" | The browser closed before confirming. The webhook (8.4) fixes this automatically once it's set up. |

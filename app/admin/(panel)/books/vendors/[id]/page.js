@@ -1,23 +1,24 @@
 import { notFound } from "next/navigation";
-import { MessageCircle, Pencil, Phone } from "lucide-react";
+import { MessageCircle, Pencil, Phone, Plus } from "lucide-react";
 import { archiveVendor, linkVendorProduct, restoreVendor, setPreferredVendor, unlinkVendorProduct, updateVendorProduct } from "@/app/admin/(panel)/books/actions";
 import ConfirmSubmit from "@/components/admin/ConfirmSubmit";
 import SubmitButton from "@/components/admin/SubmitButton";
+import PurchaseStatus from "@/components/books/PurchaseStatus";
 import { CopyUpiId } from "@/components/orders/UpiReferenceForm";
 import { paiseToRupeeInput } from "@/src/lib/books/money";
 import { booksGetLinkableProducts, booksGetVendor } from "@/src/lib/books/data";
-import { formatPrice } from "@/src/lib/format";
+import { formatDate, formatPrice } from "@/src/lib/format";
 
 const SAVED = {
   created: "Vendor added.", updated: "Vendor saved.", archived: "Vendor archived.", restored: "Vendor restored.",
   linked: "Product linked.", preferred: "Preferred vendor updated.", "link-updated": "Saved.", unlinked: "Product unlinked.",
 };
-const TABS = [["products", "Products supplied"], ["details", "Details & notes"]];
+const TABS = [["purchases", "Purchases"], ["products", "Products supplied"], ["details", "Details & notes"]];
 
 export default async function VendorPage({ params, searchParams }) {
   const vendor = await booksGetVendor(params.id);
   if (!vendor) notFound();
-  const tab = TABS.some(([key]) => key === searchParams?.tab) ? searchParams.tab : "products";
+  const tab = TABS.some(([key]) => key === searchParams?.tab) ? searchParams.tab : "purchases";
   const linkable = tab === "products" ? await booksGetLinkableProducts(vendor.id) : [];
   const archived = vendor.status === "archived";
 
@@ -33,6 +34,7 @@ export default async function VendorPage({ params, searchParams }) {
         {vendor.whatsapp && <a className="stock-save" href={`https://wa.me/91${vendor.whatsapp}`} target="_blank" rel="noreferrer"><MessageCircle size={14} /> WhatsApp</a>}
         {vendor.upi_id && <span className="vendor-upi"><code>{vendor.upi_id}</code><CopyUpiId upiId={vendor.upi_id} /></span>}
         <a className="stock-save" href={`/admin/books/vendors/${vendor.id}/edit`}><Pencil size={14} /> Edit</a>
+        {!archived && <a className="button button-dark" href={`/admin/books/purchases/new?vendor=${vendor.id}`}><Plus size={14} /> New purchase</a>}
       </div>
     </div>
     {searchParams?.saved && <p className="admin-success" role="status">{SAVED[searchParams.saved] ?? "Saved."}</p>}
@@ -40,15 +42,30 @@ export default async function VendorPage({ params, searchParams }) {
     {archived && <p className="admin-note archived-note">Archived{vendor.archived_reason ? `: ${vendor.archived_reason}` : ""}. It stays in your records; restore it to buy from them again.</p>}
 
     <section className="kpi-row kpi-row-4" aria-label="Vendor figures">
-      <div className="kpi"><span className="kpi-label">Balance due</span><span className="kpi-value">{formatPrice(Math.max(vendor.balancePaise, 0))}</span><span className="kpi-note">{vendor.balancePaise < 0 ? `${formatPrice(-vendor.balancePaise)} advance with them` : "Opening balance only, for now"}</span></div>
-      <div className="kpi"><span className="kpi-label">Products supplied</span><span className="kpi-value">{vendor.products.length}</span><span className="kpi-note">{vendor.products.filter((p) => p.is_preferred).length} as preferred vendor</span></div>
+      <div className="kpi"><span className="kpi-label">Balance due</span><span className="kpi-value">{formatPrice(Math.max(vendor.balancePaise, 0))}</span><span className="kpi-note">{vendor.balancePaise < 0 ? `${formatPrice(-vendor.balancePaise)} advance with them` : "Opening balance + bills · payments coming next"}</span></div>
+      <div className="kpi"><span className="kpi-label">Purchased</span><span className="kpi-value">{formatPrice(vendor.purchasedPaise)}</span><span className="kpi-note">Received or billed{vendor.lastPurchaseDate ? ` · last ${formatDate(vendor.lastPurchaseDate)}` : ""}</span></div>
       <div className="kpi"><span className="kpi-label">Payment terms</span><span className="kpi-value">{vendor.payment_terms_days ? `${vendor.payment_terms_days} days` : "On receipt"}</span><span className="kpi-note">From the bill date</span></div>
-      <div className="kpi"><span className="kpi-label">Rating</span><span className="kpi-value">{vendor.rating ? <span aria-label={`${vendor.rating} of 5`}>{"★".repeat(vendor.rating)}</span> : "—"}</span><span className="kpi-note">{vendor.gstin ? `GSTIN ${vendor.gstin}` : "No GSTIN"}</span></div>
+      <div className="kpi"><span className="kpi-label">Products supplied</span><span className="kpi-value">{vendor.products.length}</span><span className="kpi-note">{vendor.rating ? <span aria-label={`Rated ${vendor.rating} of 5`}>{"★".repeat(vendor.rating)}</span> : `${vendor.products.filter((p) => p.is_preferred).length} as preferred vendor`}</span></div>
     </section>
 
     <nav className="category-nav admin-tabs" aria-label="Vendor sections"><ul>
       {TABS.map(([key, label]) => <li key={key}><a href={`/admin/books/vendors/${vendor.id}?tab=${key}`} className={tab === key ? "is-active" : ""} aria-current={tab === key ? "page" : undefined}>{label}</a></li>)}
     </ul></nav>
+
+    {tab === "purchases" && (vendor.purchases.length === 0
+      ? <div className="books-empty">
+          <p>No purchases from {vendor.name} yet.</p>
+          {!archived && <a className="button button-dark" href={`/admin/books/purchases/new?vendor=${vendor.id}`}><Plus size={14} /> New purchase</a>}
+        </div>
+      : <table className="admin-table table-cards">
+          <thead><tr><th>Purchase</th><th>Status</th><th>Bill</th><th className="num">Total</th></tr></thead>
+          <tbody>{vendor.purchases.map((purchase) => <tr key={purchase.id} className={purchase.status === "cancelled" ? "is-void" : ""}>
+            <td data-label="Purchase"><a href={`/admin/books/purchases/${purchase.id}`}><strong>{purchase.number}</strong></a><small>{formatDate(purchase.order_date)}</small></td>
+            <td data-label="Status"><PurchaseStatus status={purchase.status} /></td>
+            <td data-label="Bill">{purchase.bill_number ? <span className="cell-value">{purchase.bill_number}{purchase.due_date && <small>pay by {formatDate(purchase.due_date)}</small>}</span> : <span className="muted">—</span>}</td>
+            <td data-label="Total" className="num">{formatPrice(purchase.total_paise)}</td>
+          </tr>)}</tbody>
+        </table>)}
 
     {tab === "products" && <div className="admin-split">
       <section>
@@ -102,7 +119,7 @@ export default async function VendorPage({ params, searchParams }) {
             ["Contact person", vendor.contact_person], ["Phone", vendor.phone && `+91 ${vendor.phone}`], ["WhatsApp", vendor.whatsapp && `+91 ${vendor.whatsapp}`],
             ["Email", vendor.email], ["Address", [vendor.address, vendor.city, vendor.state].filter(Boolean).join(", ")],
             ["UPI ID", vendor.upi_id], ["Bank", [vendor.bank_account_name, vendor.bank_account_number, vendor.bank_ifsc].filter(Boolean).join(" · ")],
-            ["GSTIN", vendor.gstin], ["PAN", vendor.pan], ["Opening balance", formatPrice(vendor.opening_balance_paise)], ["Notes", vendor.notes],
+            ["GSTIN", vendor.gstin], ["PAN", vendor.pan], ["Rating", vendor.rating && `${"★".repeat(vendor.rating)} (${vendor.rating} of 5)`], ["Opening balance", formatPrice(vendor.opening_balance_paise)], ["Notes", vendor.notes],
           ].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value || <span className="muted">—</span>}</dd></div>)}
         </dl>
       </section>

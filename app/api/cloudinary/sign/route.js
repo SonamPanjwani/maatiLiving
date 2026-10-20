@@ -15,6 +15,10 @@ export async function POST(request) {
   if (!String(paramsToSign.folder ?? "").startsWith("maati-living/")) {
     return NextResponse.json({ error: "Uploads must go into a maati-living/ folder" }, { status: 400 });
   }
+  // Bills and receipts are private: only "authenticated" uploads may go into the bills folder.
+  if (String(paramsToSign.folder).startsWith("maati-living/bills") && paramsToSign.type !== "authenticated") {
+    return NextResponse.json({ error: "Bill uploads must be private" }, { status: 400 });
+  }
 
   // Cloudinary signature: sorted key=value pairs joined by &, secret appended, SHA-1 hex.
   const payload = Object.keys(paramsToSign)

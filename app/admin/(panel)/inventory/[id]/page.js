@@ -47,6 +47,7 @@ export default async function InventoryProductPage({ params, searchParams }) {
                 <td data-label="When">{dateFormat.format(new Date(m.created_at))}</td>
                 <td data-label="What"><span className="cell-value">{MOVEMENT_LABELS[m.reason] ?? m.reason}{m.adjustment_reason && ` · ${m.adjustment_reason}`}
                   {m.ref_type === "order" && m.ref_id && <small><a href={`/admin/orders/${m.ref_id}`}>View order</a></small>}
+                  {m.ref_type === "purchase" && m.ref_id && <small><a href={`/admin/books/purchases/${m.ref_id}`}>View purchase</a>{m.unit_cost_paise != null && ` · ${formatPrice(m.unit_cost_paise)} landed per piece`}</small>}
                   {m.note && <small>{m.note}</small>}</span></td>
                 <td data-label="Change" className={`num ${m.qty_change < 0 ? "qty-out" : "qty-in"}`}>{m.qty_change > 0 ? `+${m.qty_change}` : m.qty_change}</td>
                 <td data-label="After" className="num">{m.stock_after}</td>
@@ -72,7 +73,7 @@ export default async function InventoryProductPage({ params, searchParams }) {
           </label>
           <label className="field"><span>Note <small>required for "Other"</small></span><input name="note" maxLength={300} /></label>
           <AdjustStockSubmit productName={product.name} currentStock={product.stock} />
-          <p className="admin-note">Stock can't go below zero. Stock from vendors will be added here once Purchases is ready.</p>
+          <p className="admin-note">Stock can't go below zero. Stock from vendors comes in through Purchases → Receive items.</p>
         </form>
 
         <form action={setCostPrice} className="admin-form books-side-block">
@@ -80,7 +81,7 @@ export default async function InventoryProductPage({ params, searchParams }) {
           <input type="hidden" name="id" value={product.id} />
           <label className="field"><span>Cost per piece (₹) <small>what it costs you; blank = not set</small></span><input name="cost" type="number" min="0.01" step="0.01" inputMode="decimal" defaultValue={paiseToRupeeInput(product.costPaise)} placeholder="e.g. 180" /></label>
           <SubmitButton>Save cost</SubmitButton>
-          <p className="admin-note">Purchases will update this automatically (weighted average) once you receive stock.</p>
+          <p className="admin-note">Receiving a purchase updates this automatically: the average of the stock you had and the new delivery (including its share of shipping).</p>
         </form>
 
         <form action={setLowStockThreshold} className="admin-form books-side-block">

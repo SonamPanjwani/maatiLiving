@@ -1,6 +1,6 @@
 import { Plus } from "lucide-react";
 import { booksGetVendors } from "@/src/lib/books/data";
-import { formatPrice } from "@/src/lib/format";
+import { formatDate, formatPrice } from "@/src/lib/format";
 
 export default async function VendorsPage({ searchParams }) {
   const status = searchParams?.status === "archived" ? "archived" : "active";
@@ -36,12 +36,13 @@ export default async function VendorsPage({ searchParams }) {
           {!searchParams?.q && status === "active" && <a className="button button-dark" href="/admin/books/vendors/new"><Plus size={14} /> Add your first vendor</a>}
         </div>
       : <table className="admin-table table-cards">
-          <thead><tr><th>Vendor</th><th>City</th><th>Supplies</th><th className="num">Balance due</th></tr></thead>
+          <thead><tr><th>Vendor</th><th>City</th><th>Supplies</th><th>Last purchase</th><th className="num">Balance due</th></tr></thead>
           <tbody>
             {vendors.map((vendor) => <tr key={vendor.id}>
               <td data-label="Vendor"><a href={`/admin/books/vendors/${vendor.id}`}><strong>{vendor.name}</strong></a>{vendor.contact_person && <small>{vendor.contact_person}</small>}</td>
               <td data-label="City">{[vendor.city, vendor.state].filter(Boolean).join(", ") || <span className="muted">—</span>}</td>
               <td data-label="Supplies">{vendor.supplies || <span className="muted">—</span>}</td>
+              <td data-label="Last purchase">{vendor.lastPurchaseDate ? formatDate(vendor.lastPurchaseDate) : <span className="muted">—</span>}</td>
               <td data-label="Balance due" className={`num ${vendor.balancePaise > 0 ? "admin-warn" : ""}`}><span className="cell-value">{vendor.balancePaise > 0 ? formatPrice(vendor.balancePaise) : vendor.balancePaise < 0 ? <>{formatPrice(-vendor.balancePaise)} <small>advance</small></> : "—"}</span></td>
             </tr>)}
           </tbody>

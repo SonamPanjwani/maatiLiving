@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 // Sub-navigation for the Books area. Sections are added as each phase ships.
 const SECTIONS = [
   ["/admin/books/vendors", "Vendors"],
+  ["/admin/books/purchases", "Purchases"],
   ["/admin/inventory", "Inventory"],
 ];
 

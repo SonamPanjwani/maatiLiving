@@ -110,7 +110,7 @@ async function rest(path) {
 
 if (has("NEXT_PUBLIC_SUPABASE_URL") && secretKey) {
   try {
-    const tables = { categories: "0001", products: "0001", profiles: "0001", orders: "0002", addresses: "0003", settings: "0004", carts: "0006", vendors: "0007", vendor_products: "0007", stock_movements: "0007", audit_log: "0007" };
+    const tables = { categories: "0001", products: "0001", profiles: "0001", orders: "0002", addresses: "0003", settings: "0004", carts: "0006", vendors: "0007", vendor_products: "0007", stock_movements: "0007", audit_log: "0007", purchases: "0008", purchase_items: "0008" };
     let schemaOk = true;
     for (const [table, migration] of Object.entries(tables)) {
       const { status } = await rest(`${table}?select=*&limit=1`);
@@ -150,7 +150,8 @@ if (has("NEXT_PUBLIC_SUPABASE_URL") && secretKey) {
 
 // ---------------------------------------------------------------- admin guards (static)
 // Every admin page must sit under app/admin/(panel) (layout runs requireAdminPage) or be the login page;
-// every exported server action / route handler under app/admin must call assertAdmin() or getCurrentAdmin().
+// every exported server action / route handler under app/admin (and the admin-only API routes) must call
+// assertAdmin() or getCurrentAdmin().
 {
   const { readdirSync, statSync } = await import("node:fs");
   const walk = (dir) => readdirSync(dir).flatMap((name) => {
@@ -158,7 +159,11 @@ if (has("NEXT_PUBLIC_SUPABASE_URL") && secretKey) {
     return statSync(full).isDirectory() ? walk(full) : [full];
   });
   const adminDir = new URL("app/admin/", root);
-  const files = walk(adminDir).map((url) => decodeURIComponent(url.pathname).replace(/^.*?app\/admin\//, "app/admin/"));
+  const files = [
+    ...walk(adminDir).map((url) => decodeURIComponent(url.pathname).replace(/^.*?app\/admin\//, "app/admin/")),
+    ...walk(new URL("app/api/books/", root)).map((url) => decodeURIComponent(url.pathname).replace(/^.*?app\/api\//, "app/api/")),
+    "app/api/cloudinary/sign/route.js",
+  ];
   const problems = [];
   for (const file of files) {
     if (/\/page\.js$/.test(file) && !file.startsWith("app/admin/(panel)/") && file !== "app/admin/login/page.js") problems.push(`${file}: admin page outside (panel) — no admin guard`);
@@ -173,7 +178,7 @@ if (has("NEXT_PUBLIC_SUPABASE_URL") && secretKey) {
     }
   }
   if (problems.length) block(`Admin guard missing:\n${problems.map((p) => `      ${p}`).join("\n")}`);
-  else ok(`Admin guards present on all /admin pages, actions and routes (${files.length} files checked)`);
+  else ok(`Admin guards present on all /admin pages, actions and admin API routes (${files.length} files checked)`);
 }
 
 // ---------------------------------------------------------------- report

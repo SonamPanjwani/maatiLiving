@@ -32,7 +32,9 @@ app/
   auth/callback        exchanges Supabase email-link codes for a session, then ?next= (sanitised)
   admin/               /admin — login/, (panel)/: dashboard (page.js), orders (+ export/route.js CSV),
                        products, categories, inventory, customers, settings (delivery); actions.js
-  api/cloudinary/sign  signs admin photo uploads (admin-only)
+                       books/: vendors, purchases (list, new, [id], [id]/edit, [id]/receive, [id]/print)
+  api/cloudinary/sign  signs admin photo uploads (admin-only); bills folder must be type "authenticated"
+  api/books/bill       admin-only: 302 to a signed URL for a private bill file (thumb/view/original, PDF page)
   api/razorpay/webhook verifies Razorpay webhook signature, marks orders paid/failed
 middleware.js          /admin, /account, /checkout: refresh session; signed-out → /admin/login or /account/login?next=
 components/
@@ -77,7 +79,9 @@ src/
   lib/email.js         server-only: optional Resend order emails (no-op without RESEND_API_KEY)
   lib/order-status.js  STATUS_LABELS, adminStatusLabel(order), ORDER_TABS (admin list + CSV export)
   lib/payment-mode.js  server-only getPaymentMode(): razorpay | upi | whatsapp
-  lib/books/           data.js (admin reads), money.js (rupees⇄paise), vendors.js (validateVendor)
+  lib/books/           data.js (admin reads), money.js (rupees⇄paise), vendors.js (validateVendor),
+                       purchases.js (landed/weighted cost mirror of SQL, validatePurchase, vendorBalance, PO text),
+                       files.js (server-only: signed URLs for private bill files)
   config/payments.js   upiConfig (NEXT_PUBLIC_UPI_ID / _PAYEE_NAME), isUpiConfigured, upiPayUrl()
   lib/settings.js      getShippingSettings (public read of settings.shipping, falls back to defaults)
   lib/validation.js    clean, phone/email checks, validateAddress (shared by checkout + saved addresses)
@@ -96,7 +100,8 @@ src/
 - Roles change only via SQL (`update profiles set role = 'admin' …`); there is deliberately no UI or policy for it.
 - Storefront reads use the cookie-free public client so pages stay static; admin mutations call `revalidatePath("/", "layout")`.
 - Prices are integers in **paise**; display with `formatPrice` (whole rupees without decimals, otherwise exact paise, never rounded).
-- **Deploy order:** run any new migration in Supabase *before* pushing code that uses it (docs/DEPLOY.md). Pending for the next migration (0008): make `books_set_cost_price` reject 0 in SQL too (the app already does).
+- **Deploy order:** run any new migration in Supabase *before* pushing code that uses it (docs/DEPLOY.md).
+- Dates: `formatDate("2026-10-20")` → "20 Oct 2026" (hand-built; Intl prints "Sept"), `formatDateTime(ts)` in IST, `todayInIndia()` for date inputs.
 - **Payments:** never trust browser prices. `quoteCart` re-reads price/stock; `startCheckout` refuses if anything changed; orders are paid only via `markOrderPaid` (SQL `mark_order_paid`, idempotent, decrements stock once) after a verified Razorpay signature (checkout handler or webhook). `mark_order_paid` is executable by `service_role` only.
 - The secret-key client (`src/lib/supabase/admin.js`) is for guest checkout, payment confirmation, order lookups by access token and `claim_guest_orders` only; admin and account screens use the session client so RLS applies.
 - **Customer data:** account pages filter by `user_id = user.id` explicitly in addition to RLS (admins' RLS would otherwise see every order). Customers can update only `profiles.full_name`/`phone` (column-level grant) — never `role`. Post-login redirects go through `safeNextPath`.
@@ -105,7 +110,9 @@ src/
 - Refunds: full only, via `refundPayment` (Razorpay API) in `refundOrder`; direct-UPI orders are refunded outside the site. Restocking goes through SQL `admin_restock_order` (admin-only, once per order via `orders.restocked`).
 - CSV export neutralises cells starting with = + - @ (spreadsheet formula injection).
 - **Cart ownership** (`CartProvider`): guests → localStorage `maati-cart-v1`; signed-in → `carts` row (`0006_carts.sql`, RLS own row) + local copy `maati-cart-v1:<userId>`. Owner is re-checked on every page change (browser Supabase client, `src/lib/supabase/browser.js`); on sign-in the guest cart merges in and is cleared; on sign-out the shown cart empties. Never trust cart prices (server re-quotes).
-- **Books / stock ledger** (`0007_books_foundation.sql`): `products.stock` changes only inside approved SQL functions (`_stock_move`, called by `books_adjust_stock`, the order functions, later purchases); a trigger blocks any other stock UPDATE. Every stock/money function is one transaction and RAISEs on failure (never "return an error code" after writing). New product initial stock → `opening_stock` movement via trigger. `order_items.unit_cost_paise` snapshots cost when an order is paid. `audit_log` (trigger `audit_row`) records `auth.uid()` for admin writes, `actor_kind = 'system'` for service-role writes. Vendors are archived, never deleted. Books actions live in `app/admin/(panel)/books/actions.js` (assertAdmin in every one); reads in `src/lib/books/data.js`; money parsing `src/lib/books/money.js` (no floats).
+- **Books / stock ledger** (`0007_books_foundation.sql`): `products.stock` changes only inside approved SQL functions (`_stock_move`, called by `books_adjust_stock`, the order functions, later purchases); a trigger blocks any other stock UPDATE. Every stock/money function is one transaction and RAISEs on failure (never "return an error code" after writing). New product initial stock → `opening_stock` movement via trigger. `order_items.unit_cost_paise` snapshots cost when an order is paid. `audit_log` (trigger `audit_row`) records `auth.uid()` for admin writes, `actor_kind = 'system'` for service-role writes. Vendors are archived, never deleted. Books actions live in `app/admin/(panel)/books/actions.js` and `books/purchases/actions.js` (assertAdmin in every one); reads in `src/lib/books/data.js`; money parsing `src/lib/books/money.js` (no floats).
+- **Purchases** (`0008_books_purchases.sql`): `purchases` (PO-1001… from `purchase_number_seq`) + `purchase_items` are read-only to the API; writes only via `books_save_purchase` (header + lines, totals computed in SQL), `books_mark_purchase_ordered`, `books_cancel_purchase`, `books_receive_purchase` (stock in, landed cost = unit × (subtotal + shipping − discount) / subtotal, weighted average with null cost = incoming cost, vendor last cost upsert; over-receive only with `p_allow_over`, which bills the received qty). After any receipt: no cancel, no line/amount edits (bill fields, files, notes stay editable). The JS mirror in `src/lib/books/purchases.js` must stay identical (a DB test compares them). Vendor balance = opening + purchases that are received/partly received or have a bill number (payments subtract from Phase 3).
+- **Bill files** are private Cloudinary uploads (`type: "authenticated"`, folder `maati-living/bills`, enforced by `/api/cloudinary/sign`) stored as `{publicId, format, version, pages, name}` in `purchases.bill_attachments`. Pages link through admin-only `/api/books/bill` (302 to a freshly signed URL); never put signed URLs in HTML. Original PDFs need Cloudinary's "Allow delivery of PDF and ZIP files"; PDF pages render as JPG regardless.
 - **Tests:** `npm test` (node:test). `tests/db/*` boot PGlite with migrations (`tests/db/harness.mjs`); `tests/db/order-functions-regression.test.mjs` proves rewritten order functions keep identical stock results. Helpers imported by unit tests use relative `.js` imports (Node can't resolve `@/`). Demo data lives in `supabase/demo/` (never migrations).
 - Secrets/env: `.env.local` (git-ignored). Document every new var in `.env.example`.
 
