@@ -49,7 +49,7 @@ export default function VendorForm({ vendor }) {
         <label className="field" htmlFor="v-rating"><span>Rating <small>optional</small></span>
           <select id="v-rating" name="rating" defaultValue={v.rating ?? ""}>
             <option value="">—</option>
-            {[5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{"★".repeat(n)}</option>)}
+            {[5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{`${"★".repeat(n)} (${n} of 5)`}</option>)}
           </select>
         </label>
       </div>

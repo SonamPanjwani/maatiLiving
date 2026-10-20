@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { adjustStock, setCostPrice, setLowStockThreshold } from "@/app/admin/actions";
-import ConfirmSubmit from "@/components/admin/ConfirmSubmit";
+import AdjustStockSubmit from "@/components/books/AdjustStockSubmit";
 import SubmitButton from "@/components/admin/SubmitButton";
 import { paiseToRupeeInput } from "@/src/lib/books/money";
 import { DEFAULT_LOW_STOCK, booksGetInventoryProduct } from "@/src/lib/books/data";
@@ -45,9 +45,9 @@ export default async function InventoryProductPage({ params, searchParams }) {
               <thead><tr><th>When</th><th>What</th><th className="num">Change</th><th className="num">After</th></tr></thead>
               <tbody>{product.movements.map((m) => <tr key={m.id}>
                 <td data-label="When">{dateFormat.format(new Date(m.created_at))}</td>
-                <td data-label="What">{MOVEMENT_LABELS[m.reason] ?? m.reason}{m.adjustment_reason && ` · ${m.adjustment_reason}`}
+                <td data-label="What"><span className="cell-value">{MOVEMENT_LABELS[m.reason] ?? m.reason}{m.adjustment_reason && ` · ${m.adjustment_reason}`}
                   {m.ref_type === "order" && m.ref_id && <small><a href={`/admin/orders/${m.ref_id}`}>View order</a></small>}
-                  {m.note && <small>{m.note}</small>}</td>
+                  {m.note && <small>{m.note}</small>}</span></td>
                 <td data-label="Change" className={`num ${m.qty_change < 0 ? "qty-out" : "qty-in"}`}>{m.qty_change > 0 ? `+${m.qty_change}` : m.qty_change}</td>
                 <td data-label="After" className="num">{m.stock_after}</td>
               </tr>)}</tbody>
@@ -58,10 +58,11 @@ export default async function InventoryProductPage({ params, searchParams }) {
         <form action={adjustStock} className="admin-form">
           <h2 className="eyebrow">ADJUST STOCK</h2>
           <input type="hidden" name="id" value={product.id} />
-          <div className="segmented" role="radiogroup" aria-label="Add or remove">
+          <fieldset className="segmented">
+            <legend className="sr-only">Add or remove</legend>
             <label><input type="radio" name="direction" value="add" defaultChecked /> Add</label>
             <label><input type="radio" name="direction" value="remove" /> Remove</label>
-          </div>
+          </fieldset>
           <label className="field"><span>How many pieces</span><input name="qty" type="number" inputMode="numeric" min="1" step="1" required /></label>
           <label className="field"><span>Reason</span>
             <select name="reason" required defaultValue="">
@@ -70,8 +71,8 @@ export default async function InventoryProductPage({ params, searchParams }) {
             </select>
           </label>
           <label className="field"><span>Note <small>required for "Other"</small></span><input name="note" maxLength={300} /></label>
-          <ConfirmSubmit className="button button-dark" message={`Change the stock of ${product.name}? It's recorded in the stock history and can't be edited later.`}>Save adjustment</ConfirmSubmit>
-          <p className="admin-note">Stock can't go below zero. Receiving from vendors will happen through Purchases.</p>
+          <AdjustStockSubmit productName={product.name} currentStock={product.stock} />
+          <p className="admin-note">Stock can't go below zero. Stock from vendors will be added here once Purchases is ready.</p>
         </form>
 
         <form action={setCostPrice} className="admin-form books-side-block">

@@ -3235,7 +3235,7 @@ button.text-link {
   display: inline-block;
   background: var(--charcoal);
   color: var(--cotton);
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: .14em;
   text-transform: uppercase;
   padding: 3px 7px;
@@ -3266,13 +3266,6 @@ button.text-link {
   border-top: 1px solid var(--line);
 }
 
-.books-form .button,
-.books-side .button {
-  border: 0;
-  cursor: pointer;
-  font-family: inherit;
-}
-
 .vendor-actions {
   display: flex;
   flex-wrap: wrap;
@@ -3281,10 +3274,7 @@ button.text-link {
 }
 
 .vendor-actions .stock-save {
-  display: inline-flex;
-  align-items: center;
   gap: .4rem;
-  min-height: 40px;
 }
 
 .vendor-upi {
@@ -3344,7 +3334,7 @@ button.text-link {
 }
 
 .qty-in {
-  color: var(--moss);
+  color: var(--charcoal);
   font-weight: 600;
 }
 
@@ -3445,5 +3435,66 @@ button.text-link {
   .table-cards .table-action { justify-content: flex-end; }
   .vendor-details div { grid-template-columns: 1fr; gap: .2rem; }
   .inline-form input { flex: 1 1 100px; font-size: 16px; }
-  .sticky-save { position: sticky; bottom: 0; background: var(--cotton); padding: .8rem 0; z-index: 5; border-top: 1px solid var(--line); }
+  .sticky-save { position: sticky; bottom: 0; background: var(--cotton); padding: .8rem 0 calc(.8rem + env(safe-area-inset-bottom)); z-index: 5; border-top: 1px solid var(--line); }
+  .table-cards .cell-value { text-align: right; }
+  .table-cards .cell-value small { display: block; }
+  .table-cards td:has(.inline-form) { display: block; }
+  .table-cards .inline-form { margin-top: .4rem; }
+  .admin-tabs a,
+  .books-nav a { padding: 14px 0 10px; }
+}
+
+/* Books phone pass: 44px targets, readable labels, form focus, adjust-first on small screens */
+.stock-save {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.vendor-upi .upi-copy,
+.admin a.text-link {
+  min-height: 44px;
+}
+
+.admin a.text-link {
+  display: inline-flex;
+  align-items: center;
+}
+
+.books-form legend.eyebrow,
+.admin-split > section > h2.eyebrow,
+.admin-heading .eyebrow {
+  color: var(--charcoal);
+}
+
+.inline-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.inline-form label small {
+  font-size: 10px;
+  color: #665e54;
+}
+
+.inline-form input:focus {
+  outline: 2px solid var(--turmeric);
+  outline-offset: -1px;
+  border-color: transparent;
+}
+
+fieldset.segmented {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.segmented label:has(input:focus-visible) {
+  outline: 2px solid var(--turmeric);
+  outline-offset: 1px;
+}
+
+@media (max-width: 1000px) {
+  .admin-split > .books-side { order: -1; }
 }

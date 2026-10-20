@@ -40,10 +40,10 @@ export default async function VendorPage({ params, searchParams }) {
     {archived && <p className="admin-note archived-note">Archived{vendor.archived_reason ? `: ${vendor.archived_reason}` : ""}. It stays in your records; restore it to buy from them again.</p>}
 
     <section className="kpi-row kpi-row-4" aria-label="Vendor figures">
-      <div className="kpi"><span className="kpi-label">Balance due</span><span className="kpi-value">{formatPrice(Math.max(vendor.balancePaise, 0))}</span><span className="kpi-note">{vendor.balancePaise < 0 ? `${formatPrice(-vendor.balancePaise)} advance with them` : "Opening balance (purchases come next)"}</span></div>
+      <div className="kpi"><span className="kpi-label">Balance due</span><span className="kpi-value">{formatPrice(Math.max(vendor.balancePaise, 0))}</span><span className="kpi-note">{vendor.balancePaise < 0 ? `${formatPrice(-vendor.balancePaise)} advance with them` : "Opening balance only, for now"}</span></div>
       <div className="kpi"><span className="kpi-label">Products supplied</span><span className="kpi-value">{vendor.products.length}</span><span className="kpi-note">{vendor.products.filter((p) => p.is_preferred).length} as preferred vendor</span></div>
       <div className="kpi"><span className="kpi-label">Payment terms</span><span className="kpi-value">{vendor.payment_terms_days ? `${vendor.payment_terms_days} days` : "On receipt"}</span><span className="kpi-note">From the bill date</span></div>
-      <div className="kpi"><span className="kpi-label">Rating</span><span className="kpi-value">{vendor.rating ? "★".repeat(vendor.rating) : "—"}</span><span className="kpi-note">{vendor.gstin ? `GSTIN ${vendor.gstin}` : "No GSTIN"}</span></div>
+      <div className="kpi"><span className="kpi-label">Rating</span><span className="kpi-value">{vendor.rating ? <span aria-label={`${vendor.rating} of 5`}>{"★".repeat(vendor.rating)}</span> : "—"}</span><span className="kpi-note">{vendor.gstin ? `GSTIN ${vendor.gstin}` : "No GSTIN"}</span></div>
     </section>
 
     <nav className="category-nav admin-tabs" aria-label="Vendor sections"><ul>
@@ -55,20 +55,20 @@ export default async function VendorPage({ params, searchParams }) {
         {vendor.products.length === 0
           ? <div className="books-empty"><p>No products linked yet. Link what {vendor.name} supplies so purchases can pre-fill their last cost.</p></div>
           : <table className="admin-table table-cards">
-              <thead><tr><th>Product</th><th>Their SKU / last cost</th><th>Preferred</th><th /></tr></thead>
+              <thead><tr><th>Product</th><th>Their SKU / last cost</th><th>Preferred</th><th><span className="sr-only">Actions</span></th></tr></thead>
               <tbody>{vendor.products.map((link) => <tr key={link.id}>
                 <td data-label="Product"><a href={`/admin/inventory/${link.product_id}`}><strong>{link.products?.name}</strong></a><small>{link.products?.stock} in stock · sells at {formatPrice(link.products?.price_paise ?? 0)}</small></td>
                 <td data-label="SKU / cost">
                   <form action={updateVendorProduct} className="inline-form">
                     <input type="hidden" name="vendorId" value={vendor.id} /><input type="hidden" name="linkId" value={link.id} />
-                    <input name="vendorSku" defaultValue={link.vendor_sku ?? ""} placeholder="Their SKU" aria-label={`Vendor SKU for ${link.products?.name}`} />
-                    <input name="lastCost" inputMode="decimal" defaultValue={paiseToRupeeInput(link.last_cost_paise)} placeholder="₹ cost" aria-label={`Last cost for ${link.products?.name}`} />
+                    <label><small>Their SKU</small><input name="vendorSku" defaultValue={link.vendor_sku ?? ""} aria-label={`Vendor SKU for ${link.products?.name}`} /></label>
+                    <label><small>Last cost (₹)</small><input name="lastCost" inputMode="decimal" defaultValue={paiseToRupeeInput(link.last_cost_paise)} aria-label={`Last cost for ${link.products?.name}`} /></label>
                     <SubmitButton className="stock-save" pendingLabel="…">Save</SubmitButton>
                   </form>
                 </td>
                 <td data-label="Preferred">{link.is_preferred
                   ? <span className="badge">Preferred</span>
-                  : <form action={setPreferredVendor}><input type="hidden" name="vendorId" value={vendor.id} /><input type="hidden" name="productId" value={link.product_id} /><button type="submit" className="text-link">Make preferred</button></form>}</td>
+                  : <form action={setPreferredVendor}><input type="hidden" name="vendorId" value={vendor.id} /><input type="hidden" name="productId" value={link.product_id} /><ConfirmSubmit className="text-link" message={`Make ${vendor.name} the preferred vendor for ${link.products?.name}? This replaces the current preferred vendor.`}>Make preferred</ConfirmSubmit></form>}</td>
                 <td className="table-action"><form action={unlinkVendorProduct}><input type="hidden" name="vendorId" value={vendor.id} /><input type="hidden" name="linkId" value={link.id} /><ConfirmSubmit className="text-link" message={`Unlink ${link.products?.name} from ${vendor.name}? Purchase history isn't affected.`}>Unlink</ConfirmSubmit></form></td>
               </tr>)}</tbody>
             </table>}

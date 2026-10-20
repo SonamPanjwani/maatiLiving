@@ -17,7 +17,7 @@ export default async function VendorsPage({ searchParams }) {
     <form className="admin-filters" action="/admin/books/vendors">
       <input type="hidden" name="status" value={status} />
       <input type="hidden" name="sort" value={sort} />
-      <label className="field" htmlFor="vendor-q"><span>Search</span><input id="vendor-q" name="q" defaultValue={searchParams?.q ?? ""} placeholder="Name, phone, city or what they supply" /></label>
+      <label className="field" htmlFor="vendor-q"><span>Search</span><input id="vendor-q" type="search" enterKeyHint="search" name="q" defaultValue={searchParams?.q ?? ""} placeholder="Name, phone, city or what they supply" /></label>
       <button type="submit" className="button button-dark">Search</button>
       {searchParams?.q && <a className="text-link" href={`/admin/books/vendors?status=${status}`}>Clear</a>}
     </form>
@@ -36,14 +36,13 @@ export default async function VendorsPage({ searchParams }) {
           {!searchParams?.q && status === "active" && <a className="button button-dark" href="/admin/books/vendors/new"><Plus size={14} /> Add your first vendor</a>}
         </div>
       : <table className="admin-table table-cards">
-          <thead><tr><th>Vendor</th><th>City</th><th>Supplies</th><th className="num">Balance due</th><th>Last purchase</th></tr></thead>
+          <thead><tr><th>Vendor</th><th>City</th><th>Supplies</th><th className="num">Balance due</th></tr></thead>
           <tbody>
             {vendors.map((vendor) => <tr key={vendor.id}>
               <td data-label="Vendor"><a href={`/admin/books/vendors/${vendor.id}`}><strong>{vendor.name}</strong></a>{vendor.contact_person && <small>{vendor.contact_person}</small>}</td>
               <td data-label="City">{[vendor.city, vendor.state].filter(Boolean).join(", ") || <span className="muted">—</span>}</td>
               <td data-label="Supplies">{vendor.supplies || <span className="muted">—</span>}</td>
-              <td data-label="Balance due" className={`num ${vendor.balancePaise > 0 ? "admin-warn" : ""}`}>{vendor.balancePaise > 0 ? formatPrice(vendor.balancePaise) : vendor.balancePaise < 0 ? <>{formatPrice(-vendor.balancePaise)} <small>advance</small></> : "—"}</td>
-              <td data-label="Last purchase"><span className="muted">—</span></td>
+              <td data-label="Balance due" className={`num ${vendor.balancePaise > 0 ? "admin-warn" : ""}`}><span className="cell-value">{vendor.balancePaise > 0 ? formatPrice(vendor.balancePaise) : vendor.balancePaise < 0 ? <>{formatPrice(-vendor.balancePaise)} <small>advance</small></> : "—"}</span></td>
             </tr>)}
           </tbody>
         </table>}

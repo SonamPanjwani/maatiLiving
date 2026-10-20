@@ -14,7 +14,7 @@ export default async function InventoryPage({ searchParams }) {
 
   return <>
     <div className="admin-heading">
-      <div><p className="eyebrow">CATALOGUE</p><h1>Inventory</h1></div>
+      <div><p className="eyebrow">BOOKS</p><h1>Inventory</h1></div>
       <p className="admin-note">
         {totalUnits} units · {formatPrice(valueAtPrice)} at selling price · {formatPrice(valueAtCost)} at cost
         {missingCost > 0 && <><br />{missingCost} {missingCost === 1 ? "product has" : "products have"} no cost price yet</>}
@@ -29,11 +29,11 @@ export default async function InventoryPage({ searchParams }) {
     {products.length === 0
       ? <p className="admin-empty">{lowOnly ? "Nothing is running low." : "No products yet."}</p>
       : <table className="admin-table table-cards">
-          <thead><tr><th>Product</th><th className="num">Stock</th><th className="num">Cost</th><th className="num">Price</th><th className="num">Margin</th><th className="num">Value at cost</th><th>Preferred vendor</th><th /></tr></thead>
+          <thead><tr><th>Product</th><th className="num">Stock</th><th className="num">Cost</th><th className="num">Price</th><th className="num">Margin</th><th className="num">Value at cost</th><th>Preferred vendor</th><th><span className="sr-only">Actions</span></th></tr></thead>
           <tbody>
             {products.map((product) => <tr key={product.id}>
               <td data-label="Product"><a href={`/admin/inventory/${product.id}`}><strong>{product.name}</strong></a><small>{[product.category, product.sku, !product.available && "Hidden"].filter(Boolean).join(" · ")}</small></td>
-              <td data-label="Stock" className={`num ${product.stock <= product.lowStockAt ? "admin-warn" : ""}`}>{product.stock}{product.stock <= product.lowStockAt && <small>low (≤ {product.lowStockAt})</small>}</td>
+              <td data-label="Stock" className={`num ${product.stock <= product.lowStockAt ? "admin-warn" : ""}`}><span className="cell-value">{product.stock}{product.stock <= product.lowStockAt && <small>low (≤ {product.lowStockAt})</small>}</span></td>
               <td data-label="Cost" className="num">{product.costPaise != null ? formatPrice(product.costPaise) : <span className="muted">not set</span>}</td>
               <td data-label="Price" className="num">{formatPrice(product.pricePaise)}</td>
               <td data-label="Margin" className="num">{product.marginPct != null ? `${product.marginPct}%` : <span className="muted">—</span>}</td>
