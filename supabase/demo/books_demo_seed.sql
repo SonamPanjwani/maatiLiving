@@ -6,7 +6,7 @@
 -- HOW TO RUN: SQL Editor → New query → paste this whole file → Run. Safe to run again: it only adds what's
 -- missing. The results panel then lists every DEMO vendor and purchase — if it's empty, something stopped it
 -- and the error is shown instead. To remove the demo data, run the block at the bottom.
--- Needs migrations 0007, 0008, 0010 and 0011. Inserted directly (the SQL Editor runs as the database owner); the app
+-- Needs migrations 0007, 0008, 0010, 0011 and 0012. Inserted directly (the SQL Editor runs as the database owner); the app
 -- itself only writes purchases through the Books functions.
 
 do $$
@@ -20,8 +20,8 @@ begin
     raise exception 'This is the PRODUCTION database (settings.environment = production). The demo seed only runs on a test project.';
   end if;
   if to_regclass('public.vendors') is null or to_regclass('public.purchases') is null or to_regclass('public.vendor_payments') is null
-     or to_regclass('public.expenses') is null then
-    raise exception 'Run migrations 0007, 0008, 0010 and 0011 first, then this file.';
+     or to_regclass('public.expenses') is null or to_regclass('public.document_counters') is null then
+    raise exception 'Run migrations 0007, 0008, 0010, 0011 and 0012 first, then this file.';
   end if;
 
   -- Vendors (created if missing)
@@ -49,7 +49,7 @@ begin
 
   -- 1. Ordered from the potters, bill already in, with freight.
   insert into public.purchases (number, vendor_id, status, order_date, expected_date, bill_number, bill_date, due_date, ordered_at, notes)
-  values ('PO-' || nextval('public.purchase_number_seq'), v_potters, 'ordered', current_date - 6, current_date + 2, 'DEMO-INV-17', current_date - 5, current_date + 10, now(), 'DEMO purchase for testing')
+  values (public._next_number('purchase'), v_potters, 'ordered', current_date - 6, current_date + 2, 'DEMO-INV-17', current_date - 5, current_date + 10, now(), 'DEMO purchase for testing')
   returning id into v_id;
   insert into public.purchase_items (purchase_id, product_id, qty_ordered, unit_cost_paise, line_total_paise, sort_order)
   select v_id, id, 20, 18000, 20 * 18000, 0 from public.products where slug = 'terracotta-diya-set-of-6';
@@ -57,7 +57,7 @@ begin
 
   -- 2. Ordered from the shell artisans, two products, small discount.
   insert into public.purchases (number, vendor_id, status, order_date, expected_date, ordered_at, notes)
-  values ('PO-' || nextval('public.purchase_number_seq'), v_shells, 'ordered', current_date - 3, current_date + 7, now(), 'DEMO purchase for testing')
+  values (public._next_number('purchase'), v_shells, 'ordered', current_date - 3, current_date + 7, now(), 'DEMO purchase for testing')
   returning id into v_id;
   insert into public.purchase_items (purchase_id, product_id, qty_ordered, unit_cost_paise, line_total_paise, sort_order)
   select v_id, p.id, l.qty, l.cost, l.qty * l.cost, l.sort
@@ -67,7 +67,7 @@ begin
 
   -- 3. A draft not sent yet.
   insert into public.purchases (number, vendor_id, notes)
-  values ('PO-' || nextval('public.purchase_number_seq'), v_potters, 'DEMO draft for testing')
+  values (public._next_number('purchase'), v_potters, 'DEMO draft for testing')
   returning id into v_id;
   insert into public.purchase_items (purchase_id, product_id, qty_ordered, unit_cost_paise, line_total_paise, sort_order)
   select v_id, id, 30, 17500, 30 * 17500, 0 from public.products where slug = 'terracotta-diya-set-of-6';
@@ -89,12 +89,12 @@ begin
     return;
   end if;
   insert into public.vendor_payments (number, vendor_id, amount_paise, paid_on, method, reference, notes)
-  select 'PAY-' || nextval('public.payment_number_seq'), id, 300000, current_date - 2, 'upi', 'DEMO-UTR-1', 'DEMO payment for testing'
+  select public._next_number('payment'), id, 300000, current_date - 2, 'upi', 'DEMO-UTR-1', 'DEMO payment for testing'
     from public.vendors where name = 'DEMO Molela Potters'
   returning id into v_id;
   if v_id is not null then perform public._apply_payment_allocations(v_id, null); end if;
   insert into public.vendor_payments (number, vendor_id, amount_paise, paid_on, method, notes)
-  select 'PAY-' || nextval('public.payment_number_seq'), id, 100000, current_date - 1, 'cash', 'DEMO advance for testing'
+  select public._next_number('payment'), id, 100000, current_date - 1, 'cash', 'DEMO advance for testing'
     from public.vendors where name = 'DEMO Kerala Shell Works';
 end $$;
 
@@ -105,13 +105,13 @@ begin
     return;
   end if;
   insert into public.expenses (number, category_id, amount_paise, tax_paise, spent_on, paid_via, description)
-  select 'EXP-' || nextval('public.expense_number_seq'), c.id, e.amount, e.tax, e.spent_on, e.via, e.description
+  select public._next_number('expense'), c.id, e.amount, e.tax, e.spent_on, e.via, e.description
     from (values ('Packaging', 120000, 18305, current_date - 4, 'upi', 'DEMO kraft boxes'),
                  ('Courier & shipping', 45000, 0, current_date - 2, 'cash', 'DEMO courier pickups'),
                  ('Ads & marketing', 150000, 0, current_date - 1, 'card', 'DEMO Instagram boost')) as e(category, amount, tax, spent_on, via, description)
     join public.expense_categories c on c.name = e.category;
   insert into public.expenses (number, category_id, amount_paise, spent_on, paid_via, description, is_recurring, recurrence, next_due_on)
-  select 'EXP-' || nextval('public.expense_number_seq'), id, 800000, (current_date - interval '1 month')::date, 'bank', 'DEMO studio rent',
+  select public._next_number('expense'), id, 800000, (current_date - interval '1 month')::date, 'bank', 'DEMO studio rent',
          true, 'monthly', current_date + 2
     from public.expense_categories where name = 'Rent';
 end $$;

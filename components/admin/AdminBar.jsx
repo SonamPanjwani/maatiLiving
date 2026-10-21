@@ -23,7 +23,7 @@ export default function AdminBar({ email }) {
     <SearchForm id="admin-search-desktop" />
     <a className="admin-view-store" href="/" target="_blank" rel="noreferrer">View store <ArrowUpRight size={14} aria-hidden="true" /><span className="sr-only"> (opens in a new tab)</span></a>
     <details className="admin-account">
-      <summary><span className="admin-account-email">{email}</span></summary>
+      <summary aria-label={`Account menu for ${email}`}><span className="admin-account-email">{email}</span></summary>
       <div className="admin-account-panel">
         <p><small>Signed in as</small><strong>{email}</strong></p>
         <form action={signOut}><button type="submit" className="admin-signout">Sign out</button></form>

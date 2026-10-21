@@ -40,7 +40,10 @@ export default function AllocationTable({ items, allocation, amountPaise, today 
   return <div className="allocation">
     <table className="admin-table table-cards allocation-lines">
       <thead><tr><th>Bill</th><th>Pay by</th><th className="num">Still to pay</th><th className="num">Pay now (₹)</th></tr></thead>
-      <tbody>{items.map((item) => <tr key={item.key}>
+      <tbody>{items.map((item) => {
+        const typed = rupeesToPaise(values[item.key] ?? "");
+        const over = Number.isInteger(typed) && typed > item.balancePaise;
+        return <tr key={item.key}>
         <td data-label="Bill"><span className="cell-value"><strong>{item.label}</strong>
           {item.purchaseId && <small>{[item.billNumber && `Bill ${item.billNumber}`, item.date && formatDate(item.date)].filter(Boolean).join(" · ")}</small>}</span></td>
         <td data-label="Pay by">{item.dueDate
@@ -54,9 +57,11 @@ export default function AllocationTable({ items, allocation, amountPaise, today 
               event.target.setCustomValidity(Number.isNaN(paise) ? "An amount in rupees, e.g. 500 or 500.50" : paise > item.balancePaise ? `Only ${formatPrice(item.balancePaise)} is still to pay on ${item.label}.` : "");
               setValue(item.key, event.target.value);
             }}
-            aria-label={`Amount of this payment for ${item.label}, in rupees`} />
+            aria-label={`Amount of this payment for ${item.label}, in rupees`} aria-invalid={over || undefined} aria-describedby={over ? `over-${item.key}` : undefined} />
+          {over && <small id={`over-${item.key}`} className="admin-warn allocation-over" role="status">More than the {formatPrice(item.balancePaise)} still to pay</small>}
         </td>
-      </tr>)}</tbody>
+      </tr>;
+      })}</tbody>
     </table>
     <div className="allocation-summary" aria-live="polite">
       <p>{check.error
