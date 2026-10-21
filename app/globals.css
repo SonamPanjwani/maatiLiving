@@ -3973,9 +3973,9 @@ fieldset.segmented {
   gap: .4rem 1rem;
 }
 
-.payment-form fieldset.segmented {
-  margin-bottom: 1rem;
+.segmented-wrap {
   flex-wrap: wrap;
+  margin-bottom: 1rem;
 }
 
 /* Visible label above a segmented control (same look as a field label). */
@@ -4028,4 +4028,141 @@ fieldset.segmented {
   .statement-head .stock-save { width: 100%; justify-content: center; }
   .statement tfoot tr { display: flex; justify-content: space-between; }
   .statement tfoot th, .statement tfoot td { border-top: 0; }
+}
+
+/* ==========================================================================
+   29. Books — expenses (quick add, categories, month switcher, reminders)
+   ========================================================================== */
+
+.expense-amount input {
+  font: 500 1.8rem/1.2 var(--font-work-sans), sans-serif;
+  max-width: 260px;
+}
+
+/* Category choice: the segmented control (.segmented .segmented-wrap), sized to each name instead of equal. */
+.chip-choices label {
+  flex: 0 1 auto;
+  justify-content: flex-start;
+  padding: 0 14px;
+}
+
+.expense-more {
+  border-top: 1px solid var(--line);
+  padding-top: .8rem;
+  margin: .4rem 0 1rem;
+}
+
+.expense-more summary {
+  list-style: none;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.expense-more summary small {
+  font-weight: 400;
+  color: #665e54;
+}
+
+.expense-more summary::-webkit-details-marker {
+  display: none;
+}
+
+.expense-more-icon {
+  transition: transform .2s;
+}
+
+.expense-more[open] .expense-more-icon {
+  transform: rotate(180deg);
+}
+
+.expense-more[open] summary {
+  margin-bottom: .6rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .expense-more-icon { transition: none; }
+}
+
+.month-switcher {
+  display: flex;
+  align-items: center;
+  gap: .8rem 1.2rem;
+  margin: 0 0 1rem;
+  font: 400 1.25rem/1.2 var(--font-fraunces), serif;
+}
+
+.month-switcher strong {
+  font-weight: 400;
+  min-width: 7.5rem;
+  text-align: center;
+}
+
+.month-switcher .stock-save {
+  min-width: 44px;
+  justify-content: center;
+}
+
+.stock-save.is-disabled {
+  opacity: .35;
+  pointer-events: none;
+}
+
+.books-due {
+  margin-bottom: 1.6rem;
+}
+
+.books-due h2 {
+  color: var(--charcoal);
+}
+
+.recurring-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.recurring-actions form {
+  margin: 0;
+}
+
+.category-totals {
+  max-width: none;
+}
+
+.category-totals div {
+  min-height: 44px;
+  align-items: center;
+}
+
+.category-totals dt a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.category-totals dt small {
+  font-size: 11px;
+  color: #665e54;
+  margin-left: .2rem;
+}
+
+.inline-form .order-input {
+  width: 72px;
+}
+
+@media (max-width: 700px) {
+  .expense-amount input { max-width: none; }
+  .segmented-wrap label { flex: 1 1 calc(33% - .4rem); }
+  .segmented-wrap.chip-choices label { flex: 1 1 calc(50% - .25rem); }
+  .month-switcher { flex-wrap: wrap; }
+  .table-cards td.recurring-actions { justify-content: flex-start; flex-wrap: wrap; }
+  /* Save bars with two buttons and Cancel: stack the buttons full width instead of running off the screen. */
+  .sticky-save { flex-wrap: wrap; gap: .6rem 1.2rem; }
+  .sticky-save .button, .sticky-save .stock-save { flex: 1 1 100%; justify-content: center; }
 }

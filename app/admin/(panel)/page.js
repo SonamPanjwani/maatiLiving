@@ -1,5 +1,7 @@
 import { Plus } from "lucide-react";
 import RevenueChart from "@/components/admin/RevenueChart";
+import RecurringDue from "@/components/books/RecurringDue";
+import { booksGetRecurringDue } from "@/src/lib/books/data";
 import { adminGetDashboard } from "@/src/lib/admin-catalog";
 import { formatPrice } from "@/src/lib/format";
 import { adminStatusLabel } from "@/src/lib/order-status";
@@ -8,8 +10,12 @@ const LOW_STOCK_AT = 5;
 const dateFormat = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
-export default async function AdminDashboard() {
-  const data = await adminGetDashboard({ lowStockAt: LOW_STOCK_AT });
+export default async function AdminDashboard({ searchParams }) {
+  // Books reminders are optional here: if the expenses migration (0011) isn't run yet, the dashboard still loads.
+  const [data, due] = await Promise.all([
+    adminGetDashboard({ lowStockAt: LOW_STOCK_AT }),
+    booksGetRecurringDue().catch(() => []),
+  ]);
 
   return <>
     <div className="admin-heading">
@@ -19,6 +25,13 @@ export default async function AdminDashboard() {
         <a className="stock-save" href="/admin/categories"><Plus size={14} /> Add category</a>
       </div>
     </div>
+
+    {searchParams?.saved === "skipped" && <p className="admin-success" role="status">Skipped. The reminder moved to the next date.</p>}
+    {searchParams?.error && <p className="admin-error" role="alert">{searchParams.error}</p>}
+    {due.length > 0 && <section className="admin-card books-due" aria-label="Repeating expenses due">
+      <h2 className="eyebrow">DUE TO PAY <small>repeating expenses, next 7 days</small></h2>
+      <RecurringDue items={due} back="dashboard" />
+    </section>}
 
     {data.upiToVerify > 0 && <a className="upi-banner" href="/admin/orders?tab=upi">{data.upiToVerify} UPI {data.upiToVerify === 1 ? "payment" : "payments"} waiting for you to check in your bank app. Open →</a>}
 

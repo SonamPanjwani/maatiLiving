@@ -58,7 +58,7 @@ export default function PaymentForm({ vendors, defaultVendorId = "", defaultPurc
             pattern="\s*₹?\s*[0-9,]+(\.[0-9]{1,2})?\s*" title="An amount in rupees, e.g. 2500 or 2500.50" placeholder="0" /></label>
         <label className="field" htmlFor="pay-date"><span>Paid on</span><input id="pay-date" name="paidOn" type="date" defaultValue={today} max={today} required /></label>
       </div>
-      <fieldset className="segmented">
+      <fieldset className="segmented segmented-wrap">
         <legend className="segmented-label">Paid by</legend>
         {Object.entries(PAYMENT_METHODS).map(([value, label]) => <label key={value}><input type="radio" name="method" value={value} checked={method === value} onChange={() => setMethod(value)} /> {label}</label>)}
       </fieldset>

@@ -316,3 +316,63 @@ export async function booksGetPayables() {
     dueSoon: bills.filter((bill) => bill.overdueDays === 0 && bill.dueDate && bill.dueDate >= today && bill.dueDate <= weekAhead),
   };
 }
+
+// ---------------------------------------------------------------- expenses
+
+const EXPENSE_COLUMNS = "id, number, category_id, amount_paise, tax_paise, spent_on, paid_via, vendor_id, description, attachments, is_recurring, recurrence, next_due_on, recurring_source_id, status, void_reason, voided_at, created_at, category:category_id(id, name), vendor:vendor_id(id, name)";
+
+export async function booksGetExpenseCategories({ includeArchived = true } = {}) {
+  let query = createSupabaseServerClient().from("expense_categories").select("id, name, sort_order, status");
+  if (!includeArchived) query = query.eq("status", "active");
+  return unwrap(await query.order("sort_order").order("name"));
+}
+
+// Expenses spent between from and to (inclusive), optionally one category / voided ones.
+export async function booksGetExpenses({ from, to, categoryId, status = "active" } = {}) {
+  let query = createSupabaseServerClient().from("expenses").select(EXPENSE_COLUMNS);
+  if (isDate(from)) query = query.gte("spent_on", from);
+  if (isDate(to)) query = query.lte("spent_on", to);
+  if (categoryId) query = query.eq("category_id", categoryId);
+  if (status === "active" || status === "voided") query = query.eq("status", status);
+  return unwrap(await query.order("spent_on", { ascending: false }).order("created_at", { ascending: false }).limit(1000));
+}
+
+// Number of active expenses per category (to show on the categories page).
+export async function booksGetExpenseCategoryCounts() {
+  const rows = unwrap(await createSupabaseServerClient().from("expenses").select("category_id").eq("status", "active").limit(20000));
+  return rows.reduce((counts, row) => ({ ...counts, [row.category_id]: (counts[row.category_id] ?? 0) + 1 }), {});
+}
+
+export async function booksGetExpense(id) {
+  const supabase = createSupabaseServerClient();
+  const expense = unwrap(await supabase.from("expenses").select(EXPENSE_COLUMNS).eq("id", id).maybeSingle());
+  if (!expense) return null;
+  const [occurrences, source] = await Promise.all([
+    supabase.from("expenses").select("id, number, amount_paise, spent_on, status").eq("recurring_source_id", id).order("spent_on", { ascending: false }).limit(200).then(unwrap),
+    expense.recurring_source_id
+      ? supabase.from("expenses").select("id, number, is_recurring, recurrence").eq("id", expense.recurring_source_id).maybeSingle().then(unwrap)
+      : null,
+  ]);
+  return { ...expense, occurrences, source };
+}
+
+// Repeating expenses due within `withinDays` (or overdue), soonest first — for the dashboard and Expenses page.
+export async function booksGetRecurringDue({ withinDays = 7 } = {}) {
+  const today = todayInIndia();
+  const rows = unwrap(await createSupabaseServerClient().from("expenses").select(EXPENSE_COLUMNS)
+    .eq("is_recurring", true).eq("status", "active").lte("next_due_on", addDaysIso(today, withinDays)).order("next_due_on").limit(100));
+  return rows.map((row) => ({ ...row, overdue: row.next_due_on < today }));
+}
+
+// Everything the expense form needs.
+export async function booksGetExpenseFormData({ includeCategoryId, includeVendorId } = {}) {
+  const supabase = createSupabaseServerClient();
+  const [categories, vendors] = await Promise.all([
+    supabase.from("expense_categories").select("id, name, status").order("sort_order").order("name").then(unwrap),
+    supabase.from("vendors").select("id, name, status").order("name").then(unwrap),
+  ]);
+  return {
+    categories: categories.filter((category) => category.status === "active" || category.id === includeCategoryId),
+    vendors: vendors.filter((vendor) => vendor.status === "active" || vendor.id === includeVendorId),
+  };
+}

@@ -30,7 +30,7 @@ async function uploadBill(file) {
   return { publicId: info.public_id, format: info.format, version: String(info.version), pages: info.pages ?? 1, name: file.name.slice(0, 120) };
 }
 
-export default function BillUploader({ name = "attachments", initialFiles = [], label = "Bill photo or PDF", max = 20, note = "Private: only admins can open these. Removing a file here takes it off the purchase." }) {
+export default function BillUploader({ name = "attachments", initialFiles = [], label = "Bill photo or PDF", max = 20, note = "Private: only admins can open these. Removing a file here takes it off the purchase.", onBusyChange }) {
   const [files, setFiles] = useState(initialFiles);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -40,6 +40,7 @@ export default function BillUploader({ name = "attachments", initialFiles = [], 
     event.target.value = "";
     if (!picked.length) return;
     setBusy(true);
+    onBusyChange?.(true);
     setError("");
     for (const file of picked) {
       if (files.length >= max) { setError(`Up to ${max} files.`); break; }
@@ -51,6 +52,7 @@ export default function BillUploader({ name = "attachments", initialFiles = [], 
       }
     }
     setBusy(false);
+    onBusyChange?.(false);
   };
 
   return <div className="bill-uploader">

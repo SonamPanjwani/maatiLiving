@@ -212,4 +212,6 @@ test("demo seed runs on a fresh database (twice) and allocates the demo payments
   const advance = (await db.query(`select count(*)::int n from public.vendor_payment_allocations a
     join public.vendor_payments p on p.id = a.payment_id where p.notes = 'DEMO advance for testing'`)).rows[0].n;
   assert.equal(advance, 0, "shell artisans have no bill yet, so it's all advance");
+  const expenses = (await db.query("select count(*)::int n, count(*) filter (where is_recurring)::int r from public.expenses where description like 'DEMO%'")).rows[0];
+  assert.deepEqual(expenses, { n: 4, r: 1 }, "three one-off DEMO expenses and one repeating rent");
 });

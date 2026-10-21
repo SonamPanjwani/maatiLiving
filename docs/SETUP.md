@@ -275,6 +275,23 @@ What's new (/admin → Books → **Payments** and **Payables**):
 
 **Demo data:** the demo file (§14) now also adds two DEMO payments: one spread over the potters' opening balance and bill, one advance to the shell artisans. Run it again after 0010; it only adds what's missing.
 
+## 16. Books: expenses and repeating reminders (Phase 4)
+
+**Order matters: run the SQL first, then deploy the code.**
+
+1. Take a backup (same as §13) and run it on the dev/test project first.
+2. **SQL Editor → New query** → paste all of `supabase/migrations/0011_books_expenses.sql` → **Run**. It should say "Success. No rows returned".
+3. `npm run check:launch` should no longer list `expense_categories` / `expenses` as missing.
+
+What's new (/admin → Books → **Expenses**):
+- **Add expense** (made for the phone): amount, category, date, how it was paid, a photo of the receipt (private). Vendor, GST and "repeats" are under **More details**. **Save & add another** for a pile of receipts.
+- **Expenses list**: one month at a time (arrows to move), filter by category, totals by category on the side. Voided ones are under **Voided**.
+- **Repeating expenses** (rent, software): tick "This repeats", choose monthly or yearly. A week before it's due it shows on the **Dashboard** and the Expenses page. **Confirm paid** opens the form with last time's amount (change it if it was different); **Skip** moves the reminder to the next date. Nothing is ever added on its own.
+- **Categories**: the 10 starter ones are there; add, rename, reorder or archive (never delete).
+- Expenses can be edited while active; **Void** (with a reason) takes one out of every total but keeps it visible.
+
+**Demo data:** the demo file (§14) now also adds three DEMO expenses and a DEMO monthly rent whose reminder is due in 2 days.
+
 ## Troubleshooting
 
 | Problem | Fix |
@@ -285,8 +302,9 @@ What's new (/admin → Books → **Payments** and **Payables**):
 | Upload widget says "Invalid signature" | API secret is wrong or belongs to a different Cloudinary account than the cloud name. |
 | Checkout says "Online payment isn't switched on yet" | One of `SUPABASE_SECRET_KEY`, `NEXT_PUBLIC_RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` is missing; restart dev server. |
 | "We couldn't start the payment" | Razorpay key/secret mismatch (test key with live secret, or a typo), or 0002 SQL not run. The terminal running `npm run dev` shows the exact error. |
-| Order pages or /admin show "column … does not exist" | A migration hasn't been run. Run them in number order (0001 → 0010). |
+| Order pages or /admin show "column … does not exist" | A migration hasn't been run. Run them in number order (0001 → 0011). |
 | Books → Purchases crashes or says a table doesn't exist | 0008 hasn't been run on this Supabase project (§14). |
+| Books → Expenses crashes, or "expenses" doesn't exist | 0011 hasn't been run on this Supabase project (§16). The dashboard still loads without it. |
 | Books → Payments / Payables / Vendors crash, or "vendor_payment_allocations" doesn't exist | 0010 hasn't been run on this Supabase project (§15). |
 | A bill thumbnail is blank / "Original PDF" shows an error | Cloudinary PDF delivery is off (§14), or `CLOUDINARY_API_SECRET` is missing on the server. |
 | Paid but order shows "Confirming payment" | The browser closed before confirming. The webhook (8.4) fixes this automatically once it's set up. |
