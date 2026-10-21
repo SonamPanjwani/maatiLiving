@@ -7,7 +7,20 @@ export function formatPrice(paise) {
   return (Math.abs(paise) % 100 === 0 ? whole : withPaise).format(paise / 100);
 }
 
+// A money figure that can be negative: "−₹1,200" with a real minus sign (losses, net cash), else as formatPrice.
+export function formatSignedPrice(paise, { plus = false } = {}) {
+  if (paise < 0) return `−${formatPrice(-paise)}`;
+  return `${plus ? "+" : ""}${formatPrice(paise)}`;
+}
+
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// "2026-05" → "May 2026" ({ short: true } → "May 26"). Blank or invalid → "".
+export function formatMonth(month, { short = false } = {}) {
+  const match = String(month ?? "").match(/^(\d{4})-(\d{2})/);
+  if (!match || !MONTHS[Number(match[2]) - 1]) return "";
+  return `${MONTHS[Number(match[2]) - 1]} ${short ? match[1].slice(2) : match[1]}`;
+}
 
 // "2026-10-20" (a calendar date, no time) → "20 Oct 2026". Blank or invalid → "".
 // Built by hand: Intl prints "Sept" in newer locale data.

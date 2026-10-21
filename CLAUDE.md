@@ -34,7 +34,10 @@ app/
                        products, categories, inventory, customers, settings (delivery); actions.js
                        books/: vendors, purchases (list, new, [id], [id]/edit, [id]/receive, [id]/print),
                        payments (list, new, [id] + allocation/void), payables,
-                       expenses (month list, new, [id], [id]/edit, [id]/confirm, categories)
+                       expenses (month list, new, [id], [id]/edit, [id]/confirm, categories),
+                       reports (index, pnl, margin, statement, ageing, valuation, movements, expenses;
+                       csv/route.js, ca-export/route.js ZIP via fflate)
+                       search/: global admin search (src/lib/admin-search.js)
   api/cloudinary/sign  signs admin photo uploads (admin-only); bills folder must be type "authenticated"
   api/books/bill       admin-only: 302 to a signed URL for a private bill file (thumb/view/original, PDF page)
   api/razorpay/webhook verifies Razorpay webhook signature, marks orders paid/failed
@@ -85,6 +88,10 @@ src/
                        purchases.js (landed/weighted cost mirror of SQL, validatePurchase, vendorBalance, PO text),
                        payments.js (openItems, autoAllocate mirror of SQL, checkAllocation, validatePayment, statement),
                        expenses.js (validateExpense, nextDueDate mirror of SQL _next_due, monthRange, categoryTotals),
+                       reports.js (P&L, margins, ageing, stock valuation, cash flow, statement range — pure),
+                       report-data.js (server-only reads, paged past the 1000-row cap; dashboard figures; CA data),
+                       report-csv.js (report CSVs + CA pack layouts), report-params.js, reorder.js
+  lib/csv.js           toCsv / csvCell (formula-safe) / csvRupees
                        files.js (server-only: signed URLs for private bill files)
   config/payments.js   upiConfig (NEXT_PUBLIC_UPI_ID / _PAYEE_NAME), isUpiConfigured, upiPayUrl()
   lib/settings.js      getShippingSettings (public read of settings.shipping, falls back to defaults)
@@ -118,6 +125,7 @@ src/
 - **Purchases** (`0008_books_purchases.sql`): `purchases` (PO-1001… from `purchase_number_seq`) + `purchase_items` are read-only to the API; writes only via `books_save_purchase` (header + lines, totals computed in SQL; unit cost must be > 0 since 0009 — samples go through Adjust stock), `books_mark_purchase_ordered`, `books_cancel_purchase`, `books_receive_purchase` (stock in, landed cost = unit × (subtotal + shipping − discount) / subtotal, weighted average with null cost = incoming cost, vendor last cost upsert; over-receive only with `p_allow_over`, which bills the received qty). After any receipt: no cancel, no line/amount edits (bill fields, files, notes stay editable). The JS mirror in `src/lib/books/purchases.js` must stay identical (a DB test compares them). Vendor balance = opening + purchases that are received/partly received or have a bill number − active payments.
 - **Payments** (`0010_books_payments.sql`, brief in `docs/BOOKS_BRIEF.md`): `vendor_payments` (PAY-1001…) + `vendor_payment_allocations` (`purchase_id` null = the vendor's opening balance) are read-only to the API; writes only via `books_record_payment`, `books_set_payment_allocations` (both: null = auto, opening first then bills by bill/order date, created_at — mirrored by `autoAllocate`/`openItems` in `src/lib/books/payments.js`, a DB test compares) and `books_void_payment`. Allocation never exceeds a bill's balance or the payment; the rest is an advance. Only active payments count; voided ones stay listed. Triggers block cancelling / un-billing / shrinking a purchase below what's paid and lowering an opening balance below what's paid. Payment proof files reuse the private bills folder.
 - **Expenses** (`0011_books_expenses.sql`): `expense_categories` (seeded 10; admins write directly via RLS, archive not delete) and `expenses` (EXP-1001…, read-only to the API; writes via `books_save_expense` (create/edit while active), `books_void_expense`, `books_confirm_recurring(source, due_on, data)` (posts a child with `recurring_source_id`; due_on must equal the current `next_due_on`, so no double posts), `books_skip_recurring`, `books_stop_recurring`). Recurring dates step from the template's `spent_on` (`_next_due` = JS `nextDueDate`, compared in a DB test); reminders show 7 days ahead on the dashboard and Expenses page and are never auto-posted. `amount_paise` includes tax; `tax_paise` is the GST part.
+- **Reports** (Phase 5, no SQL): sales = sale orders (`paid/shipped/delivered`) by IST paid date, subtotal + delivery; COGS from `order_items.unit_cost_paise`; expenses by `spent_on`. Stock valuation: qty from `stock_movements.stock_after`, cost from the audit log's `products.cost_price_paise` changes (exact, incl. hand-set costs). Lists read in pages of 1000 (`fetchAll`). Keep the CA pack's snake_case column names stable (future imports). Dashboard Books parts fail soft (null) if a Books migration isn't run.
 - **Bill files** are private Cloudinary uploads (`type: "authenticated"`, folder `maati-living/bills`, enforced by `/api/cloudinary/sign`) stored as `{publicId, format, version, pages, name}` in `purchases.bill_attachments`. Pages link through admin-only `/api/books/bill` (302 to a freshly signed URL); never put signed URLs in HTML. Original PDFs need Cloudinary's "Allow delivery of PDF and ZIP files"; PDF pages render as JPG regardless.
 - **Tests:** `npm test` (node:test). `tests/db/*` boot PGlite with migrations (`tests/db/harness.mjs`); `tests/db/order-functions-regression.test.mjs` proves rewritten order functions keep identical stock results. Helpers imported by unit tests use relative `.js` imports (Node can't resolve `@/`). Demo data lives in `supabase/demo/` (never migrations).
 - Secrets/env: `.env.local` (git-ignored). Document every new var in `.env.example`.
@@ -145,6 +153,7 @@ Palette (CSS custom properties on `:root`):
 | `--cotton` | `#EDE4D3` | page background, light text on dark |
 | `--cotton-2` | `#E4D8C2` | alternate light background (collection) |
 | `--line` | `rgba(42,38,34,.13)` | hairline dividers |
+| `--chart-out` | `#2F65A8` | chart only, not text: "money out" beside madder (validated pair) |
 
 Typography (self-hosted via next/font; CSS uses `var(--font-fraunces)` / `var(--font-work-sans)`, never the family names): **Fraunces** (serif, 400/500, real italics) for `h1–h3`, logo, large questions — tight negative letter-spacing, `<em>` italics in madder for emphasis. **Work Sans** (400/500/600) for body at 15px/1.6. Small uppercase labels use `.eyebrow` (10px, .19em tracking, turmeric).
 
@@ -164,7 +173,7 @@ Patterns: `.section` / `.section-grid` (two-column, 10vw padding), `.section-hea
 - **Phase 4 — Customer account** ✅ (code) — email/password sign-up with confirmation, password reset, `/account` order history (guest orders claimed by verified email), saved addresses (one default), profile; checkout pre-fills and can save addresses (`0003_customer_accounts.sql`, docs/SETUP.md §9).
 - **Phase 5 — Admin panel** ✅ (code) — dashboard (KPIs + 30-day revenue chart, to-ship, low stock, best sellers), order search/date filter/CSV export, shipping with courier + tracking (+ optional email), cancel/refund (Razorpay) with restock, inventory page, customers list, per-state delivery settings (`0004_admin_operations.sql`, docs/SETUP.md §10).
 - **Direct UPI / WhatsApp ordering** ✅ (code) — launch before Razorpay KYC: manual-confirm UPI payments or WhatsApp orders (`0005_manual_upi.sql`, docs/SETUP.md §11).
-- **Books (admin accounting, brief `docs/BOOKS_BRIEF.md`)** — Phase 1 stock ledger + vendors ✅, Phase 2 purchases ✅, Phase 3 payments + payables ✅ (code, `0010`), Phase 4 expenses + recurring ✅ (code, `0011`), Phase 5 inventory extensions, dashboard widgets, reports, CA export.
+- **Books (admin accounting, brief `docs/BOOKS_BRIEF.md`)** — Phase 1 stock ledger + vendors ✅, Phase 2 purchases ✅, Phase 3 payments + payables ✅ (code, `0010`), Phase 4 expenses + recurring ✅ (code, `0011`), Phase 5 reports, dashboard widgets, reorder drafts, CA export, admin search ✅ (code).
 - **Phase 6 — Launch** ✅ (code) — policy pages + contact + about (from `business.js`), sitemap/robots, canonical + OG per page, Product/Organization JSON-LD, branded 404/error, self-hosted fonts, security headers, skip link, `check:launch`, docs/DEPLOY.md. Remaining: fill `business.js`, real content, keys, deploy.
 
 Do not add auth, DB or payments ahead of their phase.

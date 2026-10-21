@@ -292,6 +292,19 @@ What's new (/admin → Books → **Expenses**):
 
 **Demo data:** the demo file (§14) now also adds three DEMO expenses and a DEMO monthly rent whose reminder is due in 2 days.
 
+## 17. Books: reports, dashboard, reorder and search (Phase 5)
+
+No new SQL: this uses the tables from §13–16 (so run 0010 and 0011 first).
+
+What's new:
+- **Books → Reports**: Profit & loss (month by month), Product margin, Vendor statement, Payables ageing, Stock valuation (any date), Stock ledger and Expenses by category. Each has date filters, **Download CSV** and **Print / PDF** (choose "Save as PDF" in the print dialog).
+- **CA export pack** (bottom of Reports): pick a month → one ZIP of CSVs for your accountant: sales, purchases, purchase items, vendor payments, expenses and stock valuation at month end. Column names stay the same every month, ready for Zoho / Tally later.
+- **Dashboard**: this month's net profit, revenue, cost of goods, gross profit and expenses (vs last month); payables (total, overdue, next bills); a 6-month cash flow chart (money in vs money out, with a table view). Low stock now links to **Reorder**.
+- **Inventory → Low stock**: a **Create reorder draft** button per preferred vendor makes a draft purchase with enough to get back to twice the low-stock level. Nothing is sent; you check it first. Products with no preferred vendor or no known price are listed so you can fix them.
+- **Search** box in the admin bar: vendors, PO / bill numbers, payments (number or UTR), expenses, products and orders.
+
+How the numbers work (for your CA): sales = item value of orders paid in the period that weren't cancelled or refunded; cost of goods = the product's average cost when each order was paid; expenses by the date spent. Pieces sold before a product had a cost price are flagged.
+
 ## Troubleshooting
 
 | Problem | Fix |

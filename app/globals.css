@@ -13,6 +13,9 @@
   --cotton: #EDE4D3;    /* page background, light text on dark */
   --cotton-2: #E4D8C2;  /* alternate light background */
   --line: rgba(42,38,34,.13);
+  /* Chart-only indigo for "money out" beside madder "money in": a brighter step of --ink, validated with madder on
+     cotton-2 (lightness band, chroma >= .10, CVD dE >= 8, contrast >= 3:1). Never for text. */
+  --chart-out: #2F65A8;
 }
 
 /* ==========================================================================
@@ -4165,4 +4168,365 @@ fieldset.segmented {
   /* Save bars with two buttons and Cancel: stack the buttons full width instead of running off the screen. */
   .sticky-save { flex-wrap: wrap; gap: .6rem 1.2rem; }
   .sticky-save .button, .sticky-save .stock-save { flex: 1 1 100%; justify-content: center; }
+}
+
+/* ==========================================================================
+   30. Books — reports, dashboard figures, cash flow, reorder, admin search
+   ========================================================================== */
+
+.admin-bar-search {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin-left: auto;
+  color: var(--cotton-2);
+}
+
+.admin-bar-search input {
+  font: inherit;
+  font-size: 12px;
+  width: 150px;
+  min-height: 34px;
+  padding: 6px 8px;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--cotton) 55%, transparent);
+  color: var(--cotton);
+}
+
+.admin-bar-search input::placeholder {
+  color: rgba(237,228,211,.7);
+}
+
+.admin-bar-search input:focus {
+  outline: 2px solid var(--turmeric);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.admin-bar-search + .admin-bar-user {
+  margin-left: 0;
+}
+
+.report-cards {
+  list-style: none;
+  margin: 0 0 2rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.report-cards a {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  height: 100%;
+  padding: 1.2rem 1.4rem;
+  background: var(--cotton-2);
+  border: 1px solid transparent;
+}
+
+.report-cards a:hover,
+.report-cards a:focus-visible {
+  border-color: var(--charcoal);
+}
+
+.report-cards strong {
+  font: 400 1.2rem/1.25 var(--font-fraunces), serif;
+}
+
+.report-cards span {
+  font-size: 13px;
+  color: #665e54;
+}
+
+.report-period {
+  margin-top: .3rem;
+}
+
+.report-intro {
+  max-width: 720px;
+  margin: -.6rem 0 1.4rem;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.pnl-table {
+  min-width: 640px;
+}
+
+/* Row labels are lines of the statement, not column headings: body text, and they stay put when swiping sideways. */
+.pnl-table th[scope="row"] {
+  text-align: left;
+  font-weight: 400;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+  padding: 1rem 1rem 1rem 0;
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  left: 0;
+  background: var(--cotton);
+}
+
+.pnl-table td,
+.pnl-table thead th {
+  white-space: nowrap;
+}
+
+.pnl-table .pnl-total-col {
+  font-weight: 600;
+  border-left: 1px solid var(--line);
+}
+
+.pnl-table .pnl-expense th {
+  padding-left: 1.2rem;
+  color: #665e54;
+}
+
+.pnl-table .pnl-sub th,
+.pnl-table .pnl-sub td {
+  border-top: 1px solid var(--charcoal);
+  font-weight: 600;
+}
+
+.pnl-table .pnl-net th,
+.pnl-table .pnl-net td {
+  border-top: 2px solid var(--charcoal);
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.admin-table tfoot th,
+.admin-table tfoot td {
+  border-top: 1px solid var(--charcoal);
+  font-weight: 600;
+}
+
+.admin-table tfoot th {
+  text-align: left;
+}
+
+.books-dashboard {
+  grid-template-columns: 1fr 2fr;
+  margin-bottom: 1.5rem;
+}
+
+.books-dashboard .kpi-value {
+  margin: 0;
+}
+
+.cash-legend {
+  list-style: none;
+  display: flex;
+  gap: 1.4rem;
+  margin: -.6rem 0 1rem;
+  padding: 0;
+  font-size: 12px;
+}
+
+.cash-legend li {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+.cash-swatch {
+  width: 10px;
+  height: 10px;
+}
+
+.cash-in { background: var(--madder); }
+.cash-out { background: var(--chart-out); }
+
+.cash-columns {
+  column-gap: 8px;
+}
+
+.cash-pair {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 100%;
+}
+
+.cash-bar {
+  display: block;
+  width: min(18px, 3vw);
+  border-radius: 4px 4px 0 0;
+}
+
+.cash-col.is-active .cash-in { background: color-mix(in srgb, var(--madder) 85%, white); }
+.cash-col.is-active .cash-out { background: color-mix(in srgb, var(--chart-out) 85%, white); }
+
+.rev-tip-right {
+  left: 0;
+  right: auto;
+  transform: none;
+}
+
+.kpi-row-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.print-only {
+  display: none;
+}
+
+.cash-x {
+  column-gap: 8px;
+}
+
+.cash-x span,
+.cash-x span:last-child {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.cash-x small {
+  font-size: 10px;
+  color: var(--charcoal);
+  font-variant-numeric: tabular-nums;
+}
+
+.cash-x small.cash-neg {
+  color: var(--madder);
+}
+
+.reorder-panel {
+  margin-bottom: 1.6rem;
+}
+
+.reorder-groups {
+  list-style: none;
+  margin: .6rem 0 0;
+  padding: 0;
+}
+
+.reorder-groups li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: .7rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.reorder-groups small {
+  display: block;
+  font-size: 12px;
+  color: #665e54;
+  margin-top: .2rem;
+}
+
+.search-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  gap: 1.6rem 2.4rem;
+}
+
+.search-group h2 small {
+  color: #665e54;
+  margin-left: .3rem;
+}
+
+.search-group ul {
+  list-style: none;
+  margin: .4rem 0 0;
+  padding: 0;
+}
+
+.search-group li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  min-height: 48px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.search-group li a {
+  display: flex;
+  flex-direction: column;
+  padding: .5rem 0;
+}
+
+.search-group li a:hover strong {
+  color: var(--madder);
+}
+
+.search-group li small {
+  font-size: 12px;
+  color: #665e54;
+}
+
+.search-group li.is-void strong {
+  text-decoration: line-through;
+}
+
+.search-group .num {
+  font-variant-numeric: tabular-nums;
+}
+
+@page wide {
+  size: A4 landscape;
+}
+
+@media print {
+  .admin-bar-search {
+    display: none !important;
+  }
+  .print-only {
+    display: block;
+  }
+  .report-print-head {
+    font-size: 11px;
+    color: #665e54;
+    margin: 0 0 .8rem;
+  }
+  .table-scroll {
+    overflow: visible;
+  }
+  .pnl-table {
+    page: wide;
+    min-width: 0;
+    font-size: 11px;
+  }
+  .pnl-table th[scope="row"] {
+    position: static;
+  }
+  .admin-table tr {
+    break-inside: avoid;
+  }
+}
+
+@media (pointer: coarse) {
+  .admin-bar-search input { min-height: 44px; font-size: 16px; }
+}
+
+@media (max-width: 1000px) {
+  .books-dashboard { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 700px) {
+  .admin-bar-search { order: 2; margin-left: 0; flex: 1 1 100%; }
+  .admin-bar-search input { flex: 1; width: auto; min-height: 44px; font-size: 16px; }
+  .admin-bar-search + .admin-bar-user { margin-left: auto; }
+  .reorder-groups li { flex-direction: column; align-items: stretch; }
+  .reorder-groups .stock-save { width: 100%; justify-content: center; }
+  .cash-columns, .cash-x { column-gap: 4px; }
+  .kpi-row-3 { grid-template-columns: 1fr; }
+  /* Total rows on phone cards: "Total" as a heading, then labelled figures, one rule above. */
+  .table-cards tfoot { display: block; }
+  .table-cards tfoot tr { border-top: 1px solid var(--charcoal); }
+  .table-cards tfoot th { display: block; text-align: left; padding: .3rem 0; border: 0; }
+  .table-cards tfoot td { border-top: 0; }
+  .table-cards td.no-card { display: none; }
 }

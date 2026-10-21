@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { assertAdmin } from "@/src/lib/auth";
+import { booksGetInventory } from "@/src/lib/books/data";
 import { validatePurchase } from "@/src/lib/books/purchases";
+import { reorderGroups } from "@/src/lib/books/reorder";
 import { createSupabaseServerClient } from "@/src/lib/supabase/server";
 
 // Purchase actions. Every one starts with assertAdmin(); the SQL functions check is_admin() again and do all
@@ -82,4 +84,26 @@ export async function receivePurchase(formData) {
   if (error) redirect(back({ error: friendly(error) }));
   revalidatePath("/", "layout"); // stock changed: storefront availability too
   redirect(purchaseUrl(id, { saved: status === "received" ? "received" : "partly" }));
+}
+
+// Draft purchase for one vendor from everything low on stock that they're the preferred vendor for.
+// Quantities and costs are recomputed here from the live data (never trusted from the page).
+export async function createReorderDraft(formData) {
+  await assertAdmin();
+  const vendorId = text(formData, "vendorId");
+  const [products, links] = await Promise.all([
+    booksGetInventory(),
+    createSupabaseServerClient().from("vendor_products").select("vendor_id, product_id, last_cost_paise").eq("vendor_id", vendorId).then(({ data }) => data ?? []),
+  ]);
+  const group = reorderGroups(products, links).groups.find((g) => g.vendor.id === vendorId);
+  if (!group?.lines.length) redirect(`/admin/inventory?${new URLSearchParams({ low: "1", error: "Nothing low on stock with a known price for this vendor." })}`);
+  const { data, error } = await createSupabaseServerClient().rpc("books_save_purchase", {
+    p_id: null,
+    p_vendor_id: vendorId,
+    p_header: { notes: "Reorder draft from low stock. Check quantities and prices before sending." },
+    p_items: group.lines.map((line) => ({ product_id: line.productId, qty: line.qty, unit_cost_paise: line.unitCostPaise })),
+  });
+  if (error) redirect(`/admin/inventory?${new URLSearchParams({ low: "1", error: friendly(error) })}`);
+  refresh();
+  redirect(`/admin/books/purchases/${data}/edit?reorder=1`);
 }

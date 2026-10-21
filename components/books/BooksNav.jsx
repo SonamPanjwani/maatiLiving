@@ -9,6 +9,7 @@ const SECTIONS = [
   ["/admin/books/payments", "Payments"],
   ["/admin/books/payables", "Payables"],
   ["/admin/books/expenses", "Expenses"],
+  ["/admin/books/reports", "Reports"],
   ["/admin/inventory", "Inventory"],
 ];
 
