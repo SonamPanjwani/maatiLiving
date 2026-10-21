@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 const SECTIONS = [
   ["/admin/books/vendors", "Vendors"],
   ["/admin/books/purchases", "Purchases"],
+  ["/admin/books/payments", "Payments"],
+  ["/admin/books/payables", "Payables"],
   ["/admin/inventory", "Inventory"],
 ];
 

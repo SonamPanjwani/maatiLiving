@@ -30,7 +30,7 @@ async function uploadBill(file) {
   return { publicId: info.public_id, format: info.format, version: String(info.version), pages: info.pages ?? 1, name: file.name.slice(0, 120) };
 }
 
-export default function BillUploader({ name = "attachments", initialFiles = [], label = "Bill photo or PDF" }) {
+export default function BillUploader({ name = "attachments", initialFiles = [], label = "Bill photo or PDF", max = 20, note = "Private: only admins can open these. Removing a file here takes it off the purchase." }) {
   const [files, setFiles] = useState(initialFiles);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -42,7 +42,7 @@ export default function BillUploader({ name = "attachments", initialFiles = [], 
     setBusy(true);
     setError("");
     for (const file of picked) {
-      if (files.length >= 20) { setError("Up to 20 files per purchase."); break; }
+      if (files.length >= max) { setError(`Up to ${max} files.`); break; }
       try {
         const uploaded = await uploadBill(file);
         setFiles((current) => [...current, uploaded]);
@@ -73,6 +73,6 @@ export default function BillUploader({ name = "attachments", initialFiles = [], 
         </label>
       : <p className="admin-note">Bill uploads aren't switched on yet. Ask your developer to add the Cloudinary upload keys.</p>}
     {error && <p className="admin-error" role="alert">{error}</p>}
-    <p className="admin-note">Private: only admins can open these. Removing a file here takes it off the purchase.</p>
+    <p className="admin-note">{note}</p>
   </div>;
 }

@@ -1,11 +1,13 @@
 import { notFound } from "next/navigation";
-import { MessageCircle, PackageCheck, Pencil, Printer } from "lucide-react";
+import { IndianRupee, MessageCircle, PackageCheck, Pencil, Printer } from "lucide-react";
 import { cancelPurchase, markPurchaseOrdered } from "@/app/admin/(panel)/books/purchases/actions";
 import ConfirmSubmit from "@/components/admin/ConfirmSubmit";
 import BillFiles from "@/components/books/BillFiles";
+import PayStatus from "@/components/books/PayStatus";
 import PurchaseStatus from "@/components/books/PurchaseStatus";
 import { siteConfig } from "@/src/config/site";
 import { booksGetPurchase } from "@/src/lib/books/data";
+import { PAYMENT_METHODS } from "@/src/lib/books/payments";
 import { PURCHASE_STATUS, purchaseOrderText } from "@/src/lib/books/purchases";
 import { formatDate, formatDateTime, formatPrice } from "@/src/lib/format";
 
@@ -23,6 +25,9 @@ export default async function PurchasePage({ params, searchParams }) {
   const canReceive = ["draft", "ordered", "partially_received"].includes(purchase.status);
   const qtyOrdered = items.reduce((sum, item) => sum + item.qty_ordered, 0);
   const qtyReceived = items.reduce((sum, item) => sum + item.qty_received, 0);
+  const { pay } = purchase;
+  const canPay = pay.state && pay.balancePaise > 0 && vendor.status === "active";
+  const activePayments = purchase.payments.filter((payment) => payment.status === "active");
 
   const shareText = (withPrices) => purchaseOrderText(purchase, { withPrices, formatPrice, formatDate, businessName: siteConfig.name ?? "Maati Living" });
   const waLink = (withPrices) => `https://wa.me/${vendor?.whatsapp ? `91${vendor.whatsapp}` : ""}?text=${encodeURIComponent(shareText(withPrices))}`;
@@ -42,6 +47,7 @@ export default async function PurchasePage({ params, searchParams }) {
       </div>
       <div className="vendor-actions">
         {canReceive && <a className="button button-dark" href={`/admin/books/purchases/${purchase.id}/receive`}><PackageCheck size={14} /> Receive items</a>}
+        {canPay && <a className={canReceive ? "stock-save" : "button button-dark"} href={`/admin/books/payments/new?vendor=${vendor.id}&purchase=${purchase.id}`}><IndianRupee size={14} /> Record payment</a>}
         {!cancelled && <a className="stock-save" href={`/admin/books/purchases/${purchase.id}/edit`}><Pencil size={14} /> {purchase.locked ? "Bill & notes" : "Edit"}</a>}
         {!cancelled && <a className="stock-save" href={waLink(false)} target="_blank" rel="noreferrer"><MessageCircle size={14} /> Share PO</a>}
         <a className="stock-save" href={`/admin/books/purchases/${purchase.id}/print`}><Printer size={14} /> Print / PDF</a>
@@ -55,7 +61,7 @@ export default async function PurchasePage({ params, searchParams }) {
       <div className="kpi"><span className="kpi-label">Total</span><span className="kpi-value">{formatPrice(purchase.total_paise)}</span><span className="kpi-note">{items.length} {items.length === 1 ? "product" : "products"}</span></div>
       <div className="kpi"><span className="kpi-label">Received</span><span className="kpi-value">{qtyReceived} / {qtyOrdered}</span><span className="kpi-note">{qtyReceived >= qtyOrdered && qtyOrdered ? "All in stock" : "pieces"}</span></div>
       <div className="kpi"><span className="kpi-label">Vendor's bill</span><span className={`kpi-value ${purchase.bill_number ? "is-text" : ""}`}>{purchase.bill_number || "—"}</span><span className="kpi-note">{purchase.bill_date ? formatDate(purchase.bill_date) : "Not added yet"}</span></div>
-      <div className="kpi"><span className="kpi-label">Pay by</span><span className="kpi-value">{purchase.due_date ? formatDate(purchase.due_date) : "—"}</span><span className="kpi-note">{vendor.payment_terms_days ? `${vendor.payment_terms_days}-day terms` : "On receipt"}</span></div>
+      <div className="kpi"><span className="kpi-label">Still to pay</span><span className={`kpi-value ${pay.overdueDays > 0 ? "admin-warn" : ""}`}>{pay.state ? formatPrice(Math.max(pay.balancePaise, 0)) : "—"}</span><span className="kpi-note">{!pay.state ? "Not a bill yet: nothing received, no bill number" : pay.state === "paid" ? "Paid in full" : purchase.due_date ? `Pay by ${formatDate(purchase.due_date)}${pay.overdueDays > 0 ? ` · ${pay.overdueDays} ${pay.overdueDays === 1 ? "day" : "days"} overdue` : ""}` : `${formatPrice(pay.paidPaise)} paid so far`}</span></div>
     </section>
 
     <div className="admin-split">
@@ -89,7 +95,9 @@ export default async function PurchasePage({ params, searchParams }) {
           {receipts.map((receipt) => <div key={receipt.at}><dt>Received</dt><dd>{formatDateTime(receipt.at)}<small>{receipt.pieces} {receipt.pieces === 1 ? "piece" : "pieces"} into stock{receipt.note && !receipt.note.startsWith("Received on") ? ` · ${receipt.note}` : ""}</small></dd></div>)}
           {purchase.received_at && <div><dt>Complete</dt><dd>{formatDateTime(purchase.received_at)}<small>Everything ordered has arrived</small></dd></div>}
           {cancelled && <div><dt>Cancelled</dt><dd>{formatDateTime(purchase.cancelled_at)}<small>{purchase.cancelled_reason}</small></dd></div>}
-          {!cancelled && <div><dt>Paid</dt><dd><span className="muted">Vendor payments are coming in the next update</span></dd></div>}
+          {activePayments.map((payment) => <div key={payment.id}><dt>Paid</dt><dd><a className="inline-link" href={`/admin/books/payments/${payment.id}`}>{payment.number}</a> · {formatDate(payment.paid_on)}<small>{formatPrice(payment.allocatedPaise)} by {PAYMENT_METHODS[payment.method]}{payment.reference ? ` · ${payment.reference}` : ""}</small></dd></div>)}
+          {pay.state === "paid" && <div><dt>Settled</dt><dd>Paid in full</dd></div>}
+          {!cancelled && pay.state && pay.state !== "paid" && <div><dt>To pay</dt><dd><PayStatus pay={pay} /></dd></div>}
         </dl>
         {purchase.notes && <><h2 className="eyebrow books-side-block">NOTES</h2><p className="purchase-notes">{purchase.notes}</p></>}
       </section>
@@ -113,13 +121,15 @@ export default async function PurchasePage({ params, searchParams }) {
           <ConfirmSubmit className="button button-dark" message={`Mark ${purchase.number} as ordered from ${vendor.name}?`}>Mark as ordered</ConfirmSubmit>
         </form>}
 
-        {purchase.editable && <form action={cancelPurchase} className="admin-form books-side-block">
+        {purchase.editable && activePayments.length > 0 && <p className="admin-note books-side-block">Payments are linked to this purchase, so it can't be cancelled. To cancel it, first void those payments or move them to another bill.</p>}
+        {purchase.editable && activePayments.length === 0 && <form action={cancelPurchase} className="admin-form books-side-block">
           <input type="hidden" name="id" value={purchase.id} />
           <h2 className="eyebrow">CANCEL PURCHASE</h2>
           <p className="admin-note">Purchases are never deleted. A cancelled one stays in your records, crossed out, with the reason.</p>
           <label className="field" htmlFor="cancel-reason"><span>Reason</span><input id="cancel-reason" name="reason" required minLength={3} maxLength={300} placeholder="e.g. vendor out of stock" /></label>
           <ConfirmSubmit message={`Cancel ${purchase.number} (${formatPrice(purchase.total_paise)} from ${vendor.name})? This can't be undone.`}>Cancel purchase</ConfirmSubmit>
         </form>}
+        {purchase.payments.some((payment) => payment.status === "voided") && <p className="admin-note books-side-block">Voided payments: {purchase.payments.filter((payment) => payment.status === "voided").map((payment, index) => <span key={payment.id}>{index > 0 && ", "}<a href={`/admin/books/payments/${payment.id}`} className="inline-link is-void-link">{payment.number}</a></span>)}. They don't count towards what's paid.</p>}
         {purchase.locked && !cancelled && <p className="admin-note books-side-block">Stock has been received, so this purchase can't be cancelled or have its items changed. Fix stock with Adjust stock on the product, and note why under Bill & notes.</p>}
       </aside>
     </div>

@@ -252,9 +252,28 @@ What's new (/admin → Books → **Purchases**):
 - **Save as draft** or **Save & mark ordered**. Share the order on WhatsApp (quantities only, or with prices) or print it / save as PDF.
 - **Receive items**: enter what actually arrived (can be in parts). Stock goes up, and each product's cost price becomes the average of the old stock and the new delivery, *including its share of shipping and discount*. More than ordered asks for a confirmation and the bill then counts the extra pieces.
 - After anything is received a purchase can't be cancelled or have its items changed; fix stock with **Adjust stock** and write why in the purchase's notes. Bill details, files and notes can always be updated.
-- Vendor pages show their purchases and a balance = opening balance + received/billed purchases (payments come in Phase 3).
+- Vendor pages show their purchases and a balance = opening balance + received/billed purchases − payments (§15).
 
 **Demo data (test project only):** paste the whole of `supabase/demo/books_demo_seed.sql` → Run. It creates the two DEMO vendors if they're missing and three DEMO purchases (one draft, two ordered) to try receiving, then shows a table of everything DEMO. Safe to run twice. Removal SQL is at the bottom.
+
+## 15. Books: vendor payments and payables (Phase 3)
+
+**Order matters: run the SQL first, then deploy the code.**
+
+1. Take a backup (same as §13) and run it on the dev/test project first.
+2. **SQL Editor → New query** → paste all of `supabase/migrations/0010_books_payments.sql` → **Run**. It should say "Success. No rows returned".
+3. `npm run check:launch` should no longer list `vendor_payments` / `vendor_payment_allocations` as missing.
+
+What's new (/admin → Books → **Payments** and **Payables**):
+- **Record payment**: vendor, amount, date, UPI / bank / cash / other, UTR, a screenshot or receipt (private, like bills). The amount fills the vendor's open bills **oldest first** (opening balance first); you can change the split. Anything not put on a bill stays as an **advance**.
+- A bill can't be paid more than what's left on it, and a payment can't be split into more than its amount.
+- **Payment page**: change which bills it covers (e.g. apply an advance to a bill that arrived later), or **void** it with a reason. Voided payments stay visible, crossed out, and stop counting everywhere. Payments are never edited or deleted.
+- **Payables**: everything still to pay, most overdue first, with total due, overdue, due in the next 7 days and advances.
+- Purchases show Paid / Part paid / Unpaid, and the list can be filtered by "Still to pay", "Overdue" or "Paid in full".
+- Vendor pages: KPIs (balance due, purchased, paid, overdue), Payments tab, and a **Statement** (opening balance, bills, payments, running balance) you can share on WhatsApp.
+- A purchase with payments on it can't be cancelled, lose its bill number or go below what's paid; void or move the payment first. A vendor's opening balance can't go below what's been paid against it.
+
+**Demo data:** the demo file (§14) now also adds two DEMO payments: one spread over the potters' opening balance and bill, one advance to the shell artisans. Run it again after 0010; it only adds what's missing.
 
 ## Troubleshooting
 
@@ -266,7 +285,8 @@ What's new (/admin → Books → **Purchases**):
 | Upload widget says "Invalid signature" | API secret is wrong or belongs to a different Cloudinary account than the cloud name. |
 | Checkout says "Online payment isn't switched on yet" | One of `SUPABASE_SECRET_KEY`, `NEXT_PUBLIC_RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` is missing; restart dev server. |
 | "We couldn't start the payment" | Razorpay key/secret mismatch (test key with live secret, or a typo), or 0002 SQL not run. The terminal running `npm run dev` shows the exact error. |
-| Order pages or /admin show "column … does not exist" | A migration hasn't been run. Run them in number order (0001 → 0008). |
+| Order pages or /admin show "column … does not exist" | A migration hasn't been run. Run them in number order (0001 → 0010). |
 | Books → Purchases crashes or says a table doesn't exist | 0008 hasn't been run on this Supabase project (§14). |
+| Books → Payments / Payables / Vendors crash, or "vendor_payment_allocations" doesn't exist | 0010 hasn't been run on this Supabase project (§15). |
 | A bill thumbnail is blank / "Original PDF" shows an error | Cloudinary PDF delivery is off (§14), or `CLOUDINARY_API_SECRET` is missing on the server. |
 | Paid but order shows "Confirming payment" | The browser closed before confirming. The webhook (8.4) fixes this automatically once it's set up. |

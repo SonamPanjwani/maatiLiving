@@ -132,9 +132,10 @@ export function validatePurchase(input, { locked = false } = {}) {
 export const isPayable = (purchase) => purchase.status !== "cancelled"
   && (purchase.status === "partially_received" || purchase.status === "received" || Boolean(purchase.bill_number));
 
-// Balance due = opening balance + payable purchase totals (payments subtract from Phase 3).
-export function vendorBalance(openingBalancePaise, purchases = []) {
-  return purchases.filter(isPayable).reduce((sum, purchase) => sum + purchase.total_paise, openingBalancePaise ?? 0);
+// Balance due = opening balance + payable purchase totals − active payments (negative = advance with them).
+export function vendorBalance(openingBalancePaise, purchases = [], payments = []) {
+  const billed = purchases.filter(isPayable).reduce((sum, purchase) => sum + purchase.total_paise, openingBalancePaise ?? 0);
+  return billed - payments.filter((payment) => payment.status === "active").reduce((sum, payment) => sum + payment.amount_paise, 0);
 }
 
 // WhatsApp text for a purchase order. Prices only when asked for; internal notes are never included.

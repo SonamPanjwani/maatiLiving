@@ -43,7 +43,8 @@ export default async function VendorsPage({ searchParams }) {
               <td data-label="City">{[vendor.city, vendor.state].filter(Boolean).join(", ") || <span className="muted">—</span>}</td>
               <td data-label="Supplies">{vendor.supplies || <span className="muted">—</span>}</td>
               <td data-label="Last purchase">{vendor.lastPurchaseDate ? formatDate(vendor.lastPurchaseDate) : <span className="muted">—</span>}</td>
-              <td data-label="Balance due" className={`num ${vendor.balancePaise > 0 ? "admin-warn" : ""}`}><span className="cell-value">{vendor.balancePaise > 0 ? formatPrice(vendor.balancePaise) : vendor.balancePaise < 0 ? <>{formatPrice(-vendor.balancePaise)} <small>advance</small></> : "—"}</span></td>
+              <td data-label="Balance due" className={`num ${vendor.overdueCount ? "admin-warn" : ""}`}><span className="cell-value">{vendor.balancePaise > 0 ? formatPrice(vendor.balancePaise) : vendor.balancePaise < 0 ? <>{formatPrice(-vendor.balancePaise)} <small>advance</small></> : "—"}
+                {vendor.overdueCount > 0 && <small><span className="badge badge-warn">{vendor.overdueCount} overdue</span></small>}</span></td>
             </tr>)}
           </tbody>
         </table>}

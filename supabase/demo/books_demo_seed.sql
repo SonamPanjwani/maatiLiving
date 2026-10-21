@@ -1,11 +1,11 @@
 -- DEMO DATA for testing the Books module on a DEV/TEST project only. Never run on production.
 -- Not a migration: lives outside supabase/migrations so it can't be applied by accident with them.
--- Everything is named "DEMO" so it's easy to spot. Phases 3–4 will add payments and expenses here.
+-- Everything is named "DEMO" so it's easy to spot. Phase 4 will add expenses here.
 --
 -- HOW TO RUN: SQL Editor → New query → paste this whole file → Run. Safe to run again: it only adds what's
 -- missing. The results panel then lists every DEMO vendor and purchase — if it's empty, something stopped it
 -- and the error is shown instead. To remove the demo data, run the block at the bottom.
--- Needs migrations 0007 and 0008. Inserted directly (the SQL Editor runs as the database owner); the app
+-- Needs migrations 0007, 0008 and 0010. Inserted directly (the SQL Editor runs as the database owner); the app
 -- itself only writes purchases through the Books functions.
 
 do $$
@@ -14,8 +14,8 @@ declare
   v_shells uuid;
   v_id uuid;
 begin
-  if to_regclass('public.vendors') is null or to_regclass('public.purchases') is null then
-    raise exception 'Run migrations 0007 and 0008 first, then this file.';
+  if to_regclass('public.vendors') is null or to_regclass('public.purchases') is null or to_regclass('public.vendor_payments') is null then
+    raise exception 'Run migrations 0007, 0008 and 0010 first, then this file.';
   end if;
 
   -- Vendors (created if missing)
@@ -73,12 +73,34 @@ begin
   end if;
 end $$;
 
+-- Payments. One to the potters (auto-allocated: opening balance first, then the billed purchase),
+-- one to the shell artisans with no bill yet (so it stays as an advance).
+do $$
+declare
+  v_id uuid;
+begin
+  if exists (select 1 from public.vendor_payments where notes like 'DEMO%') then
+    return;
+  end if;
+  insert into public.vendor_payments (number, vendor_id, amount_paise, paid_on, method, reference, notes)
+  select 'PAY-' || nextval('public.payment_number_seq'), id, 300000, current_date - 2, 'upi', 'DEMO-UTR-1', 'DEMO payment for testing'
+    from public.vendors where name = 'DEMO Molela Potters'
+  returning id into v_id;
+  if v_id is not null then perform public._apply_payment_allocations(v_id, null); end if;
+  insert into public.vendor_payments (number, vendor_id, amount_paise, paid_on, method, notes)
+  select 'PAY-' || nextval('public.payment_number_seq'), id, 100000, current_date - 1, 'cash', 'DEMO advance for testing'
+    from public.vendors where name = 'DEMO Kerala Shell Works';
+end $$;
+
 -- What's there now (shown in the results panel).
 select 'vendor' as kind, name as demo, status, null::text as total
   from public.vendors where name like 'DEMO %'
 union all
 select 'purchase', p.number || ' · ' || v.name, p.status, '₹' || (p.total_paise / 100.0)::numeric(12, 2)
   from public.purchases p join public.vendors v on v.id = p.vendor_id where p.notes like 'DEMO%'
+union all
+select 'payment', p.number || ' · ' || v.name, p.status, '₹' || (p.amount_paise / 100.0)::numeric(12, 2)
+  from public.vendor_payments p join public.vendors v on v.id = p.vendor_id where p.notes like 'DEMO%'
 order by 1 desc, 2;
 
 -- ---------------------------------------------------------------------------
@@ -87,6 +109,8 @@ order by 1 desc, 2;
 -- If you RECEIVED a demo purchase, its stock stayed: use Adjust stock on those products to take it back out
 -- (reason "recount", note "demo removed") — the stock history keeps both rows.
 -- ---------------------------------------------------------------------------
+-- delete from public.vendor_payment_allocations where payment_id in (select id from public.vendor_payments where notes like 'DEMO%');
+-- delete from public.vendor_payments where notes like 'DEMO%';
 -- delete from public.purchase_items where purchase_id in (select id from public.purchases where notes like 'DEMO%');
 -- delete from public.purchases where notes like 'DEMO%';
 -- delete from public.vendor_products where vendor_id in (select id from public.vendors where name like 'DEMO %');

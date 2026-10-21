@@ -1,12 +1,13 @@
 import { Plus } from "lucide-react";
+import PayStatus from "@/components/books/PayStatus";
 import PurchaseStatus from "@/components/books/PurchaseStatus";
-import { PURCHASE_STATUSES, booksGetPurchaseCounts, booksGetPurchases, booksGetVendors } from "@/src/lib/books/data";
+import { PAY_FILTERS, PURCHASE_STATUSES, booksGetPurchaseCounts, booksGetPurchases, booksGetVendors } from "@/src/lib/books/data";
 import { PURCHASE_STATUS } from "@/src/lib/books/purchases";
 import { formatDate, formatPrice } from "@/src/lib/format";
 
 export default async function PurchasesPage({ searchParams }) {
   const status = PURCHASE_STATUSES.includes(searchParams?.status) ? searchParams.status : "all";
-  const filters = { vendorId: searchParams?.vendor || "", from: searchParams?.from || "", to: searchParams?.to || "", q: searchParams?.q || "" };
+  const filters = { vendorId: searchParams?.vendor || "", from: searchParams?.from || "", to: searchParams?.to || "", q: searchParams?.q || "", pay: PAY_FILTERS.includes(searchParams?.pay) ? searchParams.pay : "" };
   const [purchases, counts, vendors] = await Promise.all([
     booksGetPurchases({ status, ...filters }),
     booksGetPurchaseCounts(),
@@ -16,7 +17,7 @@ export default async function PurchasesPage({ searchParams }) {
   const filtered = Object.values(filters).some(Boolean);
   const tab = (value) => {
     const params = new URLSearchParams();
-    for (const [key, v] of Object.entries({ status: value === "all" ? "" : value, q: filters.q, vendor: filters.vendorId, from: filters.from, to: filters.to })) if (v) params.set(key, v);
+    for (const [key, v] of Object.entries({ status: value === "all" ? "" : value, q: filters.q, vendor: filters.vendorId, from: filters.from, to: filters.to, pay: filters.pay })) if (v) params.set(key, v);
     const query = params.toString();
     return `/admin/books/purchases${query ? `?${query}` : ""}`;
   };
@@ -43,6 +44,14 @@ export default async function PurchasesPage({ searchParams }) {
           {vendors.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.name}</option>)}
         </select>
       </label>
+      <label className="field" htmlFor="pf-pay"><span>Payment</span>
+        <select id="pf-pay" name="pay" defaultValue={filters.pay}>
+          <option value="">Any</option>
+          <option value="unpaid">Still to pay</option>
+          <option value="overdue">Overdue</option>
+          <option value="paid">Paid in full</option>
+        </select>
+      </label>
       <label className="field" htmlFor="pf-from"><span>From</span><input id="pf-from" type="date" name="from" defaultValue={filters.from} /></label>
       <label className="field" htmlFor="pf-to"><span>To</span><input id="pf-to" type="date" name="to" defaultValue={filters.to} /></label>
       <button type="submit" className="button button-dark">Filter</button>
@@ -56,16 +65,17 @@ export default async function PurchasesPage({ searchParams }) {
         </div>
       : <>
           <table className="admin-table table-cards">
-            <thead><tr><th>Purchase</th><th>Vendor</th><th>Status</th><th className="num">Received</th><th className="num">Total</th></tr></thead>
+            <thead><tr><th>Purchase</th><th>Vendor</th><th>Status</th><th>Paid</th><th className="num">Received</th><th className="num">Total</th></tr></thead>
             <tbody>{purchases.map((purchase) => <tr key={purchase.id} className={purchase.status === "cancelled" ? "is-void" : ""}>
               <td data-label="Purchase"><a href={`/admin/books/purchases/${purchase.id}`}><strong>{purchase.number}</strong></a><small>{formatDate(purchase.order_date)}{purchase.bill_number ? ` · bill ${purchase.bill_number}` : ""}</small></td>
               <td data-label="Vendor">{purchase.vendor?.name}</td>
               <td data-label="Status"><PurchaseStatus status={purchase.status} /></td>
+              <td data-label="Paid"><PayStatus pay={purchase.pay} /></td>
               <td data-label="Received" className="num">{purchase.qtyReceived} / {purchase.qtyOrdered}</td>
               <td data-label="Total" className="num"><span className="cell-value">{formatPrice(purchase.total_paise)}{purchase.due_date && purchase.status !== "cancelled" && <small>pay by {formatDate(purchase.due_date)}</small>}</span></td>
             </tr>)}</tbody>
           </table>
-          <p className="admin-note">{purchases.length} {purchases.length === 1 ? "purchase" : "purchases"} · {formatPrice(shownTotal)} (not counting cancelled). Paid / unpaid filters arrive with vendor payments.</p>
+          <p className="admin-note">{purchases.length} {purchases.length === 1 ? "purchase" : "purchases"} · {formatPrice(shownTotal)} (not counting cancelled){purchases.some((p) => p.pay.balancePaise > 0) ? ` · ${formatPrice(purchases.reduce((sum, p) => sum + Math.max(p.pay.balancePaise, 0), 0))} still to pay` : ""}.</p>
         </>}
   </>;
 }

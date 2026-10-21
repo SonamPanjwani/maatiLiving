@@ -3503,20 +3503,24 @@ fieldset.segmented {
    27. Books — purchases (list, form, receive, bill files, printable PO)
    ========================================================================== */
 
-.po-status {
+.po-status,
+.pay-status {
   white-space: nowrap;
 }
 
 .po-status-draft,
 .po-status-ordered,
-.po-status-partially_received {
+.po-status-partially_received,
+.pay-status-unpaid,
+.pay-status-part_paid {
   background: transparent;
   color: var(--charcoal);
   outline: 1px solid var(--charcoal);
   outline-offset: -1px;
 }
 
-.po-status-partially_received {
+.po-status-partially_received,
+.pay-status-part_paid {
   outline-color: var(--turmeric);
 }
 
@@ -3544,6 +3548,7 @@ fieldset.segmented {
   flex: 1 1 200px;
 }
 
+.eyebrow small,
 .books-form legend small {
   text-transform: none;
   letter-spacing: 0;
@@ -3906,4 +3911,121 @@ fieldset.segmented {
 .books-side-block + .order-timeline {
   margin-top: .8rem;
   border-top: 0;
+}
+
+/* ==========================================================================
+   28. Books — vendor payments (allocation, pay status, statement, payables)
+   ========================================================================== */
+
+.pay-status.is-overdue {
+  color: var(--madder);
+  outline-color: var(--madder);
+}
+
+.badge-warn {
+  background: var(--madder);
+  color: var(--cotton);
+}
+
+.kpi-value.is-void {
+  text-decoration: line-through;
+  color: #665e54;
+}
+
+.is-void-link {
+  text-decoration: line-through;
+}
+
+.allocation-lines {
+  margin-bottom: .8rem;
+}
+
+.allocation-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: .6rem 1.6rem;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.allocation-summary p {
+  margin: 0;
+}
+
+.allocation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.4rem;
+}
+
+.allocation-actions .text-link:disabled {
+  color: #665e54;
+  cursor: default;
+  border-bottom-color: transparent;
+}
+
+.vendor-pay-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .4rem 1rem;
+}
+
+.payment-form fieldset.segmented {
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+/* Visible label above a segmented control (same look as a field label). */
+.segmented-label {
+  flex-basis: 100%;
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: .2rem;
+}
+
+.statement-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: .8rem 1.6rem;
+  margin-bottom: 1rem;
+}
+
+.statement-head .admin-note {
+  margin: 0;
+  max-width: 560px;
+}
+
+.statement tfoot th,
+.statement tfoot td {
+  border-top: 1px solid var(--charcoal);
+  padding-top: .8rem;
+  text-align: right;
+}
+
+.payables-advance {
+  border-left: 2px solid var(--turmeric);
+  padding: .2rem 0 .2rem 1rem;
+  margin: 0 0 1.6rem;
+}
+
+.payables-advance p,
+.payables-advance ul {
+  margin: 0 0 .3rem;
+}
+
+.payables-advance ul {
+  padding-left: 1.1rem;
+}
+
+@media (max-width: 700px) {
+  .allocation-summary { flex-direction: column; align-items: flex-start; }
+  .payment-form .segmented label { flex: 1 1 calc(50% - .25rem); }
+  .statement-head .stock-save { width: 100%; justify-content: center; }
+  .statement tfoot tr { display: flex; justify-content: space-between; }
+  .statement tfoot th, .statement tfoot td { border-top: 0; }
 }

@@ -1,19 +1,25 @@
 import { notFound } from "next/navigation";
-import { MessageCircle, Pencil, Phone, Plus } from "lucide-react";
+import { IndianRupee, MessageCircle, Pencil, Phone, Plus } from "lucide-react";
 import { archiveVendor, linkVendorProduct, restoreVendor, setPreferredVendor, unlinkVendorProduct, updateVendorProduct } from "@/app/admin/(panel)/books/actions";
 import ConfirmSubmit from "@/components/admin/ConfirmSubmit";
 import SubmitButton from "@/components/admin/SubmitButton";
+import PayStatus from "@/components/books/PayStatus";
 import PurchaseStatus from "@/components/books/PurchaseStatus";
 import { CopyUpiId } from "@/components/orders/UpiReferenceForm";
 import { paiseToRupeeInput } from "@/src/lib/books/money";
 import { booksGetLinkableProducts, booksGetVendor } from "@/src/lib/books/data";
+import { PAYMENT_METHODS, statementText } from "@/src/lib/books/payments";
+import { siteConfig } from "@/src/config/site";
 import { formatDate, formatPrice } from "@/src/lib/format";
 
 const SAVED = {
   created: "Vendor added.", updated: "Vendor saved.", archived: "Vendor archived.", restored: "Vendor restored.",
   linked: "Product linked.", preferred: "Preferred vendor updated.", "link-updated": "Saved.", unlinked: "Product unlinked.",
 };
-const TABS = [["purchases", "Purchases"], ["products", "Products supplied"], ["details", "Details & notes"]];
+// Statement balance: a negative balance means money paid ahead, shown as "advance" rather than a minus sign.
+const RunningBalance = ({ paise }) => (paise < 0 ? <span className="cell-value">{formatPrice(-paise)} <small>advance</small></span> : formatPrice(paise));
+
+const TABS = [["purchases", "Purchases"], ["payments", "Payments"], ["statement", "Statement"], ["products", "Products supplied"], ["details", "Details & notes"]];
 
 export default async function VendorPage({ params, searchParams }) {
   const vendor = await booksGetVendor(params.id);
@@ -21,6 +27,7 @@ export default async function VendorPage({ params, searchParams }) {
   const tab = TABS.some(([key]) => key === searchParams?.tab) ? searchParams.tab : "purchases";
   const linkable = tab === "products" ? await booksGetLinkableProducts(vendor.id) : [];
   const archived = vendor.status === "archived";
+  const shareStatement = `https://wa.me/${vendor.whatsapp ? `91${vendor.whatsapp}` : ""}?text=${encodeURIComponent(statementText(vendor, vendor.statement, { formatPrice, formatDate, businessName: siteConfig.name ?? "Maati Living", asOf: vendor.today }))}`;
 
   return <>
     <div className="admin-heading vendor-heading">
@@ -34,6 +41,7 @@ export default async function VendorPage({ params, searchParams }) {
         {vendor.whatsapp && <a className="stock-save" href={`https://wa.me/91${vendor.whatsapp}`} target="_blank" rel="noreferrer"><MessageCircle size={14} /> WhatsApp</a>}
         {vendor.upi_id && <span className="vendor-upi"><code>{vendor.upi_id}</code><CopyUpiId upiId={vendor.upi_id} /></span>}
         <a className="stock-save" href={`/admin/books/vendors/${vendor.id}/edit`}><Pencil size={14} /> Edit</a>
+        {!archived && <a className="stock-save" href={`/admin/books/payments/new?vendor=${vendor.id}`}><IndianRupee size={14} /> Record payment</a>}
         {!archived && <a className="button button-dark" href={`/admin/books/purchases/new?vendor=${vendor.id}`}><Plus size={14} /> New purchase</a>}
       </div>
     </div>
@@ -42,11 +50,12 @@ export default async function VendorPage({ params, searchParams }) {
     {archived && <p className="admin-note archived-note">Archived{vendor.archived_reason ? `: ${vendor.archived_reason}` : ""}. It stays in your records; restore it to buy from them again.</p>}
 
     <section className="kpi-row kpi-row-4" aria-label="Vendor figures">
-      <div className="kpi"><span className="kpi-label">Balance due</span><span className="kpi-value">{formatPrice(Math.max(vendor.balancePaise, 0))}</span><span className="kpi-note">{vendor.balancePaise < 0 ? `${formatPrice(-vendor.balancePaise)} advance with them` : "Opening balance + bills · payments coming next"}</span></div>
+      <div className="kpi"><span className="kpi-label">Balance due</span><span className="kpi-value">{formatPrice(Math.max(vendor.balancePaise, 0))}</span><span className="kpi-note">{vendor.balancePaise < 0 ? `${formatPrice(-vendor.balancePaise)} advance with them` : vendor.payment_terms_days ? `${vendor.payment_terms_days}-day terms from the bill date` : "Pay on receipt"}</span></div>
       <div className="kpi"><span className="kpi-label">Purchased</span><span className="kpi-value">{formatPrice(vendor.purchasedPaise)}</span><span className="kpi-note">Received or billed{vendor.lastPurchaseDate ? ` · last ${formatDate(vendor.lastPurchaseDate)}` : ""}</span></div>
-      <div className="kpi"><span className="kpi-label">Payment terms</span><span className="kpi-value">{vendor.payment_terms_days ? `${vendor.payment_terms_days} days` : "On receipt"}</span><span className="kpi-note">From the bill date</span></div>
-      <div className="kpi"><span className="kpi-label">Products supplied</span><span className="kpi-value">{vendor.products.length}</span><span className="kpi-note">{vendor.rating ? <span aria-label={`Rated ${vendor.rating} of 5`}>{"★".repeat(vendor.rating)}</span> : `${vendor.products.filter((p) => p.is_preferred).length} as preferred vendor`}</span></div>
+      <div className="kpi"><span className="kpi-label">Paid</span><span className="kpi-value">{formatPrice(vendor.paidPaise)}</span><span className="kpi-note">{vendor.opening_balance_paise ? `Opening balance ${formatPrice(vendor.opening_balance_paise)}` : "Active payments"}</span></div>
+      <div className="kpi"><span className="kpi-label">Overdue</span><span className={`kpi-value ${vendor.overdueCount ? "admin-warn" : ""}`}>{formatPrice(vendor.overduePaise)}</span><span className="kpi-note">{vendor.overdueCount ? `${vendor.overdueCount} ${vendor.overdueCount === 1 ? "bill" : "bills"} past the pay-by date` : "Nothing overdue"}</span></div>
     </section>
+    {vendor.advances.length > 0 && <p className="admin-note payables-advance">{vendor.advances.map(({ payment, unallocatedPaise }, index) => <span key={payment.id}>{index > 0 && " · "}<a className="inline-link" href={`/admin/books/payments/${payment.id}`}>{payment.number}</a> has {formatPrice(unallocatedPaise)} not linked to a bill</span>)}. Open it to apply it to a bill.</p>}
 
     <nav className="category-nav admin-tabs" aria-label="Vendor sections"><ul>
       {TABS.map(([key, label]) => <li key={key}><a href={`/admin/books/vendors/${vendor.id}?tab=${key}`} className={tab === key ? "is-active" : ""} aria-current={tab === key ? "page" : undefined}>{label}</a></li>)}
@@ -58,14 +67,57 @@ export default async function VendorPage({ params, searchParams }) {
           {!archived && <a className="button button-dark" href={`/admin/books/purchases/new?vendor=${vendor.id}`}><Plus size={14} /> New purchase</a>}
         </div>
       : <table className="admin-table table-cards">
-          <thead><tr><th>Purchase</th><th>Status</th><th>Bill</th><th className="num">Total</th></tr></thead>
+          <thead><tr><th>Purchase</th><th>Status</th><th>Bill</th><th>Paid</th><th className="num">Total</th></tr></thead>
           <tbody>{vendor.purchases.map((purchase) => <tr key={purchase.id} className={purchase.status === "cancelled" ? "is-void" : ""}>
             <td data-label="Purchase"><a href={`/admin/books/purchases/${purchase.id}`}><strong>{purchase.number}</strong></a><small>{formatDate(purchase.order_date)}</small></td>
             <td data-label="Status"><PurchaseStatus status={purchase.status} /></td>
             <td data-label="Bill">{purchase.bill_number ? <span className="cell-value">{purchase.bill_number}{purchase.due_date && <small>pay by {formatDate(purchase.due_date)}</small>}</span> : <span className="muted">—</span>}</td>
+            <td data-label="Paid"><PayStatus pay={purchase.pay} /></td>
             <td data-label="Total" className="num">{formatPrice(purchase.total_paise)}</td>
           </tr>)}</tbody>
         </table>)}
+
+    {tab === "payments" && (vendor.payments.length === 0
+      ? <div className="books-empty">
+          <p>No payments to {vendor.name} yet.</p>
+          {!archived && <a className="button button-dark" href={`/admin/books/payments/new?vendor=${vendor.id}`}><IndianRupee size={14} /> Record payment</a>}
+        </div>
+      : <table className="admin-table table-cards">
+          <thead><tr><th>Payment</th><th>Paid by</th><th>Pays for</th><th className="num">Amount</th></tr></thead>
+          <tbody>{vendor.payments.map((payment) => {
+            const allocated = payment.allocations.reduce((sum, a) => sum + a.amount_paise, 0);
+            const numbers = payment.allocations.map((a) => (a.purchase_id ? vendor.purchases.find((p) => p.id === a.purchase_id)?.number : "Opening balance")).filter(Boolean);
+            return <tr key={payment.id} className={payment.status === "voided" ? "is-void" : ""}>
+              <td data-label="Payment"><a href={`/admin/books/payments/${payment.id}`}><strong>{payment.number}</strong></a><small>{formatDate(payment.paid_on)}</small></td>
+              <td data-label="Paid by"><span className="cell-value">{PAYMENT_METHODS[payment.method]}{payment.reference && <small>{payment.reference}</small>}</span></td>
+              <td data-label="Pays for"><span className="cell-value">{numbers.join(", ") || <span className="muted">—</span>}
+                {payment.status === "active" && payment.amount_paise > allocated && <small>{formatPrice(payment.amount_paise - allocated)} advance</small>}
+                {payment.status === "voided" && <small>Voided: {payment.void_reason}</small>}</span></td>
+              <td data-label="Amount" className="num">{formatPrice(payment.amount_paise)}</td>
+            </tr>;
+          })}</tbody>
+        </table>)}
+
+    {tab === "statement" && <>
+      <div className="statement-head">
+        <p className="admin-note">Opening balance, bills and payments in date order. Voided payments are shown crossed out and don't count.</p>
+        <a className="stock-save" href={shareStatement} target="_blank" rel="noreferrer"><MessageCircle size={14} /> Share on WhatsApp</a>
+      </div>
+      <table className="admin-table table-cards statement">
+        <thead><tr><th>Date</th><th>Entry</th><th className="num">Bill</th><th className="num">Paid</th><th className="num">Balance</th></tr></thead>
+        <tbody>
+          <tr><td data-label="Date"><span className="muted">Start</span></td><td data-label="Entry">Opening balance</td><td data-label="Bill" className="num">{vendor.statement.openingPaise > 0 ? formatPrice(vendor.statement.openingPaise) : <span className="muted">—</span>}</td><td data-label="Paid" className="num">{vendor.statement.openingPaise < 0 ? formatPrice(-vendor.statement.openingPaise) : <span className="muted">—</span>}</td><td data-label="Balance" className="num"><RunningBalance paise={vendor.statement.openingPaise} /></td></tr>
+          {vendor.statement.lines.map((line) => <tr key={`${line.kind}-${line.id}`} className={line.voided ? "is-void" : ""}>
+            <td data-label="Date">{formatDate(line.date)}</td>
+            <td data-label="Entry"><span className="cell-value"><a href={`/admin/books/${line.kind === "bill" ? "purchases" : "payments"}/${line.id}`}><strong>{line.label}</strong></a>{line.detail && <small>{line.voided ? `Voided · ${line.detail}` : line.detail}</small>}</span></td>
+            <td data-label="Bill" className="num">{line.debitPaise ? formatPrice(line.debitPaise) : <span className="muted">—</span>}</td>
+            <td data-label="Paid" className="num">{line.creditPaise ? formatPrice(line.creditPaise) : <span className="muted">—</span>}</td>
+            <td data-label="Balance" className="num"><RunningBalance paise={line.balancePaise} /></td>
+          </tr>)}
+        </tbody>
+        <tfoot><tr><th colSpan={4} scope="row">{vendor.statement.closingPaise >= 0 ? "Balance due" : "Advance with them"}</th><td className="num"><strong>{formatPrice(Math.abs(vendor.statement.closingPaise))}</strong></td></tr></tfoot>
+      </table>
+    </>}
 
     {tab === "products" && <div className="admin-split">
       <section>
@@ -116,7 +168,7 @@ export default async function VendorPage({ params, searchParams }) {
       <section>
         <dl className="vendor-details">
           {[
-            ["Contact person", vendor.contact_person], ["Phone", vendor.phone && `+91 ${vendor.phone}`], ["WhatsApp", vendor.whatsapp && `+91 ${vendor.whatsapp}`],
+            ["Contact person", vendor.contact_person], ["Payment terms", vendor.payment_terms_days ? `${vendor.payment_terms_days} days from the bill date` : "On receipt"], ["Phone", vendor.phone && `+91 ${vendor.phone}`], ["WhatsApp", vendor.whatsapp && `+91 ${vendor.whatsapp}`],
             ["Email", vendor.email], ["Address", [vendor.address, vendor.city, vendor.state].filter(Boolean).join(", ")],
             ["UPI ID", vendor.upi_id], ["Bank", [vendor.bank_account_name, vendor.bank_account_number, vendor.bank_ifsc].filter(Boolean).join(" · ")],
             ["GSTIN", vendor.gstin], ["PAN", vendor.pan], ["Rating", vendor.rating && `${"★".repeat(vendor.rating)} (${vendor.rating} of 5)`], ["Opening balance", formatPrice(vendor.opening_balance_paise)], ["Notes", vendor.notes],
