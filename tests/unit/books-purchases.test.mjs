@@ -55,6 +55,8 @@ test("validatePurchase: helpful errors", () => {
   assert.match(validatePurchase(items([{ productId: "p1", name: "Diya", qty: 1.5, unitCost: "1" }])).error, /Quantity for Diya/);
   assert.match(validatePurchase(items([{ productId: "p1", name: "Diya", qty: 1, unitCost: "" }])).error, /cost per piece for Diya/);
   assert.match(validatePurchase(items([{ productId: "p1", name: "Diya", qty: 1, unitCost: "1.234" }])).error, /cost per piece/);
+  assert.match(validatePurchase(items([{ productId: "p1", name: "Diya", qty: 1, unitCost: "0" }])).error, /Diya must be more than ₹0/);
+  assert.match(validatePurchase(items([{ productId: "p1", name: "Diya", qty: 1, unitCost: "0.00" }])).error, /more than ₹0/);
   assert.match(validatePurchase(items([{ productId: "p1", name: "Diya", qty: 1, unitCost: "1" }, { productId: "p1", name: "Diya", qty: 1, unitCost: "1" }])).error, /twice/);
   assert.match(validatePurchase({ ...base, discount: "5000" }).error, /discount can't be more/);
   assert.match(validatePurchase({ ...base, shipping: "abc" }).error, /Shipping must be an amount/);

@@ -242,6 +242,7 @@ What changes:
 1. Take a backup (same as §13) and run it on the dev/test project first.
 2. **SQL Editor → New query** → paste all of `supabase/migrations/0008_books_purchases.sql` → **Run**. It should say "Success. No rows returned".
 3. `npm run check:launch` should no longer list `purchases` / `purchase_items` as missing.
+4. Then run `supabase/migrations/0009_purchase_cost_positive.sql` the same way: purchase lines must cost more than ₹0 (free samples go in with Inventory → Adjust stock → "Sample / gift").
 
 **Bill PDFs (one Cloudinary setting).** Bill photos and PDFs are uploaded as *private* files: nobody can open them without a link the site signs for an admin. Photos and PDF pages (shown as images) work straight away. To also open the **original PDF file**, switch on PDF delivery once:
 Cloudinary → ⚙ **Settings** → **Security** → tick **"Allow delivery of PDF and ZIP files"** → **Save**. (Until then "Original PDF" shows an error, but every page still opens as an image.)
@@ -253,7 +254,7 @@ What's new (/admin → Books → **Purchases**):
 - After anything is received a purchase can't be cancelled or have its items changed; fix stock with **Adjust stock** and write why in the purchase's notes. Bill details, files and notes can always be updated.
 - Vendor pages show their purchases and a balance = opening balance + received/billed purchases (payments come in Phase 3).
 
-**Demo data (test project only):** run `supabase/demo/books_demo_seed.sql` again — it now also adds three DEMO purchases (one draft, two ordered) to try receiving. Removal SQL is at the bottom.
+**Demo data (test project only):** paste the whole of `supabase/demo/books_demo_seed.sql` → Run. It creates the two DEMO vendors if they're missing and three DEMO purchases (one draft, two ordered) to try receiving, then shows a table of everything DEMO. Safe to run twice. Removal SQL is at the bottom.
 
 ## Troubleshooting
 

@@ -110,7 +110,11 @@ export default function PurchaseForm({ purchase, vendors, products, links, defau
           return <tr key={line.key}>
             <td data-label="Product"><strong>{line.name}</strong>{stock != null && <small>{stock} in stock{lastCost.get(line.productId)?.last_cost_paise != null ? ` · last price ${formatPrice(lastCost.get(line.productId).last_cost_paise)}` : ""}</small>}</td>
             <td data-label="Qty" className="num"><input className="line-input" type="number" inputMode="numeric" min="1" step="1" value={line.qty} onChange={(event) => updateLine(line.key, "qty", event.target.value)} aria-label={`Quantity of ${line.name}`} required /></td>
-            <td data-label="Cost per piece (₹)" className="num"><input className="line-input" inputMode="decimal" value={line.cost} onChange={(event) => updateLine(line.key, "cost", event.target.value)} aria-label={`Cost per piece of ${line.name}, in rupees`} placeholder="0" required pattern="\s*₹?\s*[0-9,]+(\.[0-9]{1,2})?\s*" title="An amount in rupees, e.g. 120 or 120.50" /></td>
+            <td data-label="Cost per piece (₹)" className="num"><input className="line-input" inputMode="decimal" value={line.cost} onChange={(event) => {
+              // ₹0 isn't a purchase: block it before submit too (free samples go through Adjust stock → Sample).
+              event.target.setCustomValidity(rupeesToPaise(event.target.value) === 0 ? "Cost must be more than ₹0. For free samples, use Adjust stock → Sample." : "");
+              updateLine(line.key, "cost", event.target.value);
+            }} aria-label={`Cost per piece of ${line.name}, in rupees`} placeholder="0" required pattern="\s*₹?\s*[0-9,]+(\.[0-9]{1,2})?\s*" title="An amount in rupees, e.g. 120 or 120.50" /></td>
             <td data-label="Line total" className="num"><span className="cell-value">{valid ? formatPrice(qty * cost) : "—"}</span></td>
             <td className="table-action"><button type="button" className="text-link" onClick={() => removeLine(line.key)} aria-label={`Remove ${line.name}`}><X size={14} /> Remove</button></td>
           </tr>;

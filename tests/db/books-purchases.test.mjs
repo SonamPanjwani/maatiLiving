@@ -76,6 +76,8 @@ test("save: validation rolls back everything; customers and direct writes are re
   assert.match(r.error ?? "", /twice/);
   r = await save(db, { vendorId, header: { discount_paise: 999 }, lines: [{ product_id: diya, qty: 1, unit_cost_paise: 100 }] });
   assert.match(r.error ?? "", /discount can't be more/);
+  r = await save(db, { vendorId, lines: [{ product_id: diya, qty: 5, unit_cost_paise: 0 }] });
+  assert.match(r.error ?? "", /more than ₹0/, "₹0 lines refused (0009)");
   r = await save(db, { vendorId, lines: [] });
   assert.match(r.error ?? "", /at least one item/);
   r = await save(db, { vendorId, header: { bill_attachments: [{ publicId: "maati-living/products/x" }] }, lines: [{ product_id: diya, qty: 1, unit_cost_paise: 1 }] });

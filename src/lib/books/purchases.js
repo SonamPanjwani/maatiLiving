@@ -120,6 +120,7 @@ export function validatePurchase(input, { locked = false } = {}) {
     if (!Number.isInteger(qty) || qty <= 0 || qty > 100000) return { error: `Quantity for ${name} must be a whole number above 0.` };
     const unitCost = rupeesToPaise(line.unitCost);
     if (unitCost == null || Number.isNaN(unitCost)) return { error: `Enter the cost per piece for ${name}, e.g. 120 or 120.50.` };
+    if (unitCost <= 0) return { error: `Cost per piece for ${name} must be more than ₹0. For free samples, use Adjust stock → Sample instead.` };
     items.push({ product_id: productId, qty, unit_cost_paise: unitCost });
   }
   const { subtotalPaise } = purchaseTotals(items.map((item) => ({ qty: item.qty, unitCostPaise: item.unit_cost_paise })));
