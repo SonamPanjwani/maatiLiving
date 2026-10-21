@@ -4687,10 +4687,6 @@ fieldset.segmented {
 
 .admin-menu-group {
   margin: 1rem 0 .2rem;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: .16em;
-  text-transform: uppercase;
   color: var(--turmeric);
 }
 
@@ -4735,8 +4731,9 @@ fieldset.segmented {
   .admin-bar-search input { width: 120px; }
 }
 
-@media (max-width: 768px) {
-  .admin-bar { padding: 0 6vw; height: 64px; }
+/* Hamburger up to 1080px: below that the 7 links + search + View store + account don't fit (iPads). */
+@media (max-width: 1080px) {
+  .admin-bar { height: 64px; }
   .admin-nav-main,
   .admin-bar > .admin-bar-search,
   .admin-bar > .admin-view-store,
@@ -4767,7 +4764,8 @@ fieldset.segmented {
   font-size: 12px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 700px) {
+  .admin-bar { padding: 0 6vw; }
   .books-nav {
     margin-left: -6vw;
     margin-right: -6vw;
@@ -4783,6 +4781,15 @@ fieldset.segmented {
 
 @media print {
   .admin-bar { position: static; }
+}
+
+/* "Database update needed" notice: eyebrow and notes keep their own sizes inside .books-empty. */
+.migration-notice .eyebrow {
+  font: 600 10px/1.6 var(--font-work-sans), sans-serif;
+}
+
+.migration-notice .admin-note {
+  font: 400 13px/1.6 var(--font-work-sans), sans-serif;
 }
 
 /* ==========================================================================
@@ -4831,7 +4838,7 @@ fieldset.segmented {
   align-items: center;
   min-height: 44px;
   padding: 0 18px;
-  border: 1px solid rgba(42,38,34,.35);
+  border: 1px solid color-mix(in srgb, var(--charcoal) 35%, transparent);
   border-radius: 999px;
   font-size: 14px;
   white-space: nowrap;
@@ -4859,6 +4866,10 @@ fieldset.segmented {
   opacity: .75;
 }
 
+.shop-chip.is-active .shop-chip-count {
+  opacity: 1;
+}
+
 .shop-chip:focus-visible {
   outline: 2px solid var(--turmeric);
   outline-offset: 2px;
@@ -4872,11 +4883,6 @@ fieldset.segmented {
 /* Floating WhatsApp: desktop tab keeps its label; the icon is phones-only. */
 .floating-whatsapp-icon {
   display: none;
-}
-
-/* "Admin panel" in the storefront header (admins only) */
-.nav-admin {
-  color: var(--turmeric);
 }
 
 @media (max-width: 700px) {
@@ -4909,10 +4915,6 @@ fieldset.segmented {
     display: block;
     width: 24px;
     height: 24px;
-  }
-  /* Room at the bottom of every page so the round WhatsApp button never covers the last content. */
-  .store-main {
-    padding-bottom: 84px;
   }
 }
 

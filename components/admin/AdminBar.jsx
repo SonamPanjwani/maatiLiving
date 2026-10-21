@@ -5,7 +5,7 @@ import { BOOKS_LINKS, MAIN_LINKS, STORE_LINKS } from "@/src/config/admin-nav";
 import { siteConfig } from "@/src/config/site";
 
 // Admin header. Desktop: logo · main nav · search · View store ↗ · account menu (email + Sign out).
-// Phones (≤ 768px): logo + a menu button that opens grouped links (Store / Books), search, View store and Sign out.
+// Phones and tablets (≤ 1080px): logo + a menu button that opens grouped links (Store / Books), search, View store and Sign out.
 // Both menus are <details>, so they open without JavaScript; links are full page loads, so they close on navigation.
 function SearchForm({ id }) {
   return <form action="/admin/search" role="search" className="admin-bar-search">
@@ -35,11 +35,11 @@ export default function AdminBar({ email }) {
       <div className="admin-menu-panel">
         <SearchForm id="admin-search-mobile" />
         <nav aria-label="Store">
-          <p className="admin-menu-group">Store</p>
+          <p className="eyebrow admin-menu-group">Store</p>
           <AdminNavLinks links={STORE_LINKS} />
         </nav>
         <nav aria-label="Books">
-          <p className="admin-menu-group">Books</p>
+          <p className="eyebrow admin-menu-group">Books</p>
           <AdminNavLinks links={BOOKS_LINKS} />
         </nav>
         <div className="admin-menu-foot">
