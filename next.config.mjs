@@ -13,6 +13,9 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  // NEXT_DIST_DIR lets a production build run in its own folder (e.g. .next-prod) without touching the .next
+  // that a running `npm run dev` uses — building into the same folder corrupts dev ("Cannot find module './NNNN.js'").
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   poweredByHeader: false,
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

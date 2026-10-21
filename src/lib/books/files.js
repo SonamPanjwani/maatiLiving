@@ -16,11 +16,26 @@ function sign(toSign, secret) {
   return createHash("sha1").update(toSign + secret).digest("base64").replace(/\+/g, "-").replace(/\//g, "_").slice(0, 8);
 }
 
+// The file exactly as uploaded, through Cloudinary's signed download API (api.cloudinary.com/…/download).
+// Unlike res.cloudinary.com delivery, this works for PDFs even when the account blocks PDF/ZIP delivery
+// (the free-plan default), and the link expires after 5 minutes. API signature: SHA-1 hex of the sorted params.
+function signedDownloadUrl({ publicId, format }) {
+  const secret = process.env.CLOUDINARY_API_SECRET;
+  const apiKey = cloudinaryConfig.apiKey;
+  if (!secret || !apiKey) return null;
+  const timestamp = Math.floor(Date.now() / 1000);
+  const params = { expires_at: timestamp + 300, format, public_id: publicId, timestamp, type: "authenticated" };
+  const toSign = Object.keys(params).sort().map((key) => `${key}=${params[key]}`).join("&");
+  const signature = createHash("sha1").update(toSign + secret).digest("hex");
+  return `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/download?${new URLSearchParams({ ...params, api_key: apiKey, signature })}`;
+}
+
 // size: "thumb" (small JPG), "view" (large JPG; for PDFs one page), "original" (the file as uploaded).
 export function signedBillUrl({ publicId, format, version, size = "view", page = 1 }) {
   const secret = process.env.CLOUDINARY_API_SECRET;
   if (!secret || !cloudinaryConfig.cloudName) return null;
   if (!isBillPublicId(publicId) || !FORMATS.has(format)) return null;
+  if (size === "original") return signedDownloadUrl({ publicId, format });
   const isPdf = format === "pdf";
   const pg = Number.isInteger(page) && page > 0 && page <= 200 ? page : 1;
   const transformation = size === "original" ? ""

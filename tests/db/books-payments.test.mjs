@@ -215,3 +215,12 @@ test("demo seed runs on a fresh database (twice) and allocates the demo payments
   const expenses = (await db.query("select count(*)::int n, count(*) filter (where is_recurring)::int r from public.expenses where description like 'DEMO%'")).rows[0];
   assert.deepEqual(expenses, { n: 4, r: 1 }, "three one-off DEMO expenses and one repeating rent");
 });
+
+test("demo seed refuses to run on a database marked as production", async () => {
+  const { readFileSync } = await import("node:fs");
+  const db = await createDb();
+  await db.exec(`insert into public.settings (key, value) values ('environment', '"production"')`);
+  const seed = readFileSync(new URL("../../supabase/demo/books_demo_seed.sql", import.meta.url), "utf8");
+  await assert.rejects(db.exec(seed), /PRODUCTION database/);
+  assert.equal((await db.query("select count(*)::int n from public.vendors where name like 'DEMO %'")).rows[0].n, 0, "nothing written");
+});

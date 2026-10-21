@@ -1,25 +1,23 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
+import { BOOKS_LINKS } from "@/src/config/admin-nav";
 
-// Sub-navigation for the Books area. Sections are added as each phase ships.
-const SECTIONS = [
-  ["/admin/books/vendors", "Vendors"],
-  ["/admin/books/purchases", "Purchases"],
-  ["/admin/books/payments", "Payments"],
-  ["/admin/books/payables", "Payables"],
-  ["/admin/books/expenses", "Expenses"],
-  ["/admin/books/reports", "Reports"],
-  ["/admin/inventory", "Inventory"],
-];
-
+// Sub-navigation for the Books area (same list as the Books group in the admin menu). One row: on phones it
+// scrolls sideways, and the current section is scrolled into view when the page opens.
 export default function BooksNav() {
   const pathname = usePathname();
+  const current = useRef(null);
+  useEffect(() => {
+    current.current?.scrollIntoView({ block: "nearest", inline: "center" });
+  }, [pathname]);
+
   return <nav className="category-nav books-nav" aria-label="Books"><ul>
-    <li className="books-nav-label">Books</li>
-    {SECTIONS.map(([href, label]) => {
-      const current = pathname === href || pathname.startsWith(`${href}/`);
-      return <li key={href}><a href={href} className={current ? "is-active" : ""} aria-current={current ? "page" : undefined}>{label}</a></li>;
+    <li className="books-nav-label" aria-hidden="true">Books</li>
+    {BOOKS_LINKS.map(([href, label]) => {
+      const isCurrent = pathname === href || pathname.startsWith(`${href}/`);
+      return <li key={href}><a href={href} ref={isCurrent ? current : undefined} className={isCurrent ? "is-active" : ""} aria-current={isCurrent ? "page" : undefined}>{label}</a></li>;
     })}
   </ul></nav>;
 }

@@ -77,7 +77,7 @@ export default async function ExpensePage({ params, searchParams }) {
           <h2 className="eyebrow">VOID EXPENSE</h2>
           <p className="admin-note">Expenses are never deleted. Voiding takes it out of every total and keeps it here, crossed out, with the reason.{expense.is_recurring ? " It also stops the repeat." : ""}</p>
           <label className="field" htmlFor="void-reason"><span>Reason</span><input id="void-reason" name="reason" required minLength={3} maxLength={300} placeholder="e.g. entered twice" /></label>
-          <ConfirmSubmit message={`Void ${expense.number} (${formatPrice(expense.amount_paise)}, ${expense.category?.name})? This can't be undone.`}>Void expense</ConfirmSubmit>
+          <ConfirmSubmit message={`Void ${expense.number} (${formatPrice(expense.amount_paise)}, ${expense.category?.name})? It will be removed from all totals.${expense.is_recurring ? " Its reminders stop too." : ""} This can't be undone.`}>Void expense</ConfirmSubmit>
         </form>}
       </aside>
     </div>

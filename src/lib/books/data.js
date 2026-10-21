@@ -49,11 +49,14 @@ export async function booksGetInventory() {
 
 export async function booksGetInventoryProduct(id) {
   const supabase = createSupabaseServerClient();
-  const row = unwrap(await supabase.from("products").select(INVENTORY_COLUMNS).eq("id", id).maybeSingle());
+  // Both reads only need the id, so they run together (each Supabase round trip can take ~0.5 s).
+  const [row, movements] = await Promise.all([
+    supabase.from("products").select(INVENTORY_COLUMNS).eq("id", id).maybeSingle().then(unwrap),
+    supabase.from("stock_movements")
+      .select("id, qty_change, reason, adjustment_reason, ref_type, ref_id, unit_cost_paise, stock_after, note, created_at")
+      .eq("product_id", id).order("created_at", { ascending: false }).limit(200).then(unwrap),
+  ]);
   if (!row) return null;
-  const movements = unwrap(await supabase.from("stock_movements")
-    .select("id, qty_change, reason, adjustment_reason, ref_type, ref_id, unit_cost_paise, stock_after, note, created_at")
-    .eq("product_id", id).order("created_at", { ascending: false }).limit(200));
   return { ...mapInventoryRow(row), movements };
 }
 
@@ -105,9 +108,8 @@ export async function booksGetVendors({ q, status = "active", sort = "name" } = 
 
 export async function booksGetVendor(id) {
   const supabase = createSupabaseServerClient();
-  const vendor = unwrap(await supabase.from("vendors").select("*").eq("id", id).maybeSingle());
-  if (!vendor) return null;
-  const [products, purchases, payments, allocations] = await Promise.all([
+  const [vendor, products, purchases, payments, allocations] = await Promise.all([
+    supabase.from("vendors").select("*").eq("id", id).maybeSingle().then(unwrap),
     supabase.from("vendor_products")
       .select("id, product_id, vendor_sku, last_cost_paise, is_preferred, products(name, slug, stock, price_paise, cost_price_paise)")
       .eq("vendor_id", id).order("created_at").then(unwrap),
@@ -117,6 +119,7 @@ export async function booksGetVendor(id) {
       .eq("vendor_id", id).order("paid_on", { ascending: false }).order("created_at", { ascending: false }).limit(500).then(unwrap),
     allAllocations(supabase),
   ]);
+  if (!vendor) return null;
   const today = todayInIndia();
   const ownAllocations = allocations.filter((allocation) => allocation.payment?.vendor_id === id);
   const paidOn = new Map();
@@ -188,13 +191,14 @@ export async function booksGetPurchaseCounts() {
 
 export async function booksGetPurchase(id) {
   const supabase = createSupabaseServerClient();
-  const purchase = unwrap(await supabase.from("purchases")
+  const [purchase, receipts] = await Promise.all([supabase.from("purchases")
     .select("*, vendor:vendor_id(id, name, contact_person, phone, whatsapp, address, city, state, gstin, upi_id, payment_terms_days, status), items:purchase_items(id, product_id, qty_ordered, qty_received, unit_cost_paise, tax_rate, line_total_paise, landed_unit_cost_paise, sort_order, product:product_id(name, sku, slug, stock)), allocations:vendor_payment_allocations(amount_paise, payment:payment_id(id, number, paid_on, method, reference, status, created_at))")
-    .eq("id", id).maybeSingle());
-  if (!purchase) return null;
-  const receipts = unwrap(await supabase.from("stock_movements")
+    .eq("id", id).maybeSingle().then(unwrap),
+  supabase.from("stock_movements")
     .select("id, product_id, qty_change, unit_cost_paise, note, created_at")
-    .eq("ref_type", "purchase").eq("ref_id", id).order("created_at"));
+    .eq("ref_type", "purchase").eq("ref_id", id).order("created_at").then(unwrap),
+  ]);
+  if (!purchase) return null;
   purchase.items.sort((a, b) => a.sort_order - b.sort_order);
   const locked = purchase.status === "partially_received" || purchase.status === "received" || purchase.items.some((item) => item.qty_received > 0);
   const payments = purchase.allocations
@@ -345,15 +349,12 @@ export async function booksGetExpenseCategoryCounts() {
 
 export async function booksGetExpense(id) {
   const supabase = createSupabaseServerClient();
-  const expense = unwrap(await supabase.from("expenses").select(EXPENSE_COLUMNS).eq("id", id).maybeSingle());
-  if (!expense) return null;
-  const [occurrences, source] = await Promise.all([
+  const [expense, occurrences] = await Promise.all([
+    supabase.from("expenses").select(`${EXPENSE_COLUMNS}, source:recurring_source_id(id, number, is_recurring, recurrence)`).eq("id", id).maybeSingle().then(unwrap),
     supabase.from("expenses").select("id, number, amount_paise, spent_on, status").eq("recurring_source_id", id).order("spent_on", { ascending: false }).limit(200).then(unwrap),
-    expense.recurring_source_id
-      ? supabase.from("expenses").select("id, number, is_recurring, recurrence").eq("id", expense.recurring_source_id).maybeSingle().then(unwrap)
-      : null,
   ]);
-  return { ...expense, occurrences, source };
+  if (!expense) return null;
+  return { ...expense, occurrences };
 }
 
 // Repeating expenses due within `withinDays` (or overdue), soonest first — for the dashboard and Expenses page.

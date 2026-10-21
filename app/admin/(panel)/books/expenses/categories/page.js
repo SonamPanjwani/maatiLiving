@@ -26,7 +26,7 @@ export default async function ExpenseCategoriesPage({ searchParams }) {
         <input type="hidden" name="status" value={category.status === "active" ? "archived" : "active"} />
         {category.status === "active"
           ? <ConfirmSubmit className="text-link" message={`Archive ${category.name}? Its expenses stay as they are; it just won't be offered for new ones.`}>Archive</ConfirmSubmit>
-          : <button type="submit" className="text-link">Restore</button>}
+          : <SubmitButton className="text-link" pendingLabel="Saving…">Restore</SubmitButton>}
       </form>
     </td>
   </tr>;

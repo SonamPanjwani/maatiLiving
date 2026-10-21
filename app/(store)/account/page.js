@@ -14,7 +14,7 @@ const itemCount = (order) => order.order_items.reduce((sum, item) => sum + item.
 const dateFormat = new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeZone: "Asia/Kolkata" });
 
 export default async function AccountOrdersPage() {
-  const { user, profile } = await requireCustomerPage("/account");
+  const { user, profile } = await requireCustomerPage("/account", { verified: true }); // full record: email_confirmed_at
   await claimGuestOrders(user); // earlier guest orders with this verified email
   const { data: orders } = await createSupabaseServerClient().from("orders")
     .select("id, order_number, status, payment_method, total_paise, created_at, order_items(quantity)")

@@ -838,52 +838,7 @@ footer small {
   padding: 1px 5px;
 }
 
-.admin-bar {
-  height: 64px;
-  display: flex;
-  align-items: center;
-  gap: 3rem;
-  padding: 0 5vw;
-  background: var(--charcoal);
-  color: var(--cotton);
-}
-
-.admin-bar .logo img {
-  width: 46px;
-  height: 46px;
-}
-
-.admin-bar nav {
-  display: flex;
-  gap: 2rem;
-  text-transform: uppercase;
-  font-size: 10px;
-  letter-spacing: .16em;
-}
-
-.admin-bar nav a:hover {
-  color: var(--turmeric);
-}
-
-.admin-bar-user {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 1.2rem;
-  font-size: 12px;
-  color: var(--cotton-2);
-}
-
-.admin-bar-user button {
-  background: none;
-  border: 1px solid currentColor;
-  color: var(--cotton);
-  padding: 6px 10px;
-  text-transform: uppercase;
-  letter-spacing: .13em;
-  font-size: 9px;
-  cursor: pointer;
-}
+/* Admin header: see section 31. */
 
 .admin-page {
   padding: 4rem 5vw 6rem;
@@ -1280,8 +1235,6 @@ footer small {
 }
 
 @media (max-width: 700px) {
-  .admin-bar { gap: 1.2rem; padding: 0 6vw; }
-  .admin-bar-user span { display: none; }
   .admin-page { padding: 2.5rem 6vw 4rem; }
   .admin-heading { flex-direction: column; align-items: flex-start; }
   .admin-split { grid-template-columns: 1fr; }
@@ -2269,15 +2222,6 @@ h3.eyebrow {
   line-height: 1.6;
 }
 
-.admin-bar nav {
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.admin-bar nav a {
-  white-space: nowrap;
-}
-
 .admin-table .num {
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -3160,9 +3104,6 @@ button.text-link {
   .field select,
   .field textarea,
   .stock-form input { font-size: 16px; }
-  /* Admin nav wraps instead of hiding links off-screen */
-  .admin-bar { height: auto; flex-wrap: wrap; padding: 12px 6vw; row-gap: .6rem; }
-  .admin-bar nav { order: 3; width: 100%; flex-wrap: wrap; gap: .8rem 1.4rem; overflow: visible; }
 }
 
 /* ==========================================================================
@@ -4174,39 +4115,6 @@ fieldset.segmented {
    30. Books — reports, dashboard figures, cash flow, reorder, admin search
    ========================================================================== */
 
-.admin-bar-search {
-  display: flex;
-  align-items: center;
-  gap: .4rem;
-  margin-left: auto;
-  color: var(--cotton-2);
-}
-
-.admin-bar-search input {
-  font: inherit;
-  font-size: 12px;
-  width: 150px;
-  min-height: 34px;
-  padding: 6px 8px;
-  background: transparent;
-  border: 1px solid color-mix(in srgb, var(--cotton) 55%, transparent);
-  color: var(--cotton);
-}
-
-.admin-bar-search input::placeholder {
-  color: rgba(237,228,211,.7);
-}
-
-.admin-bar-search input:focus {
-  outline: 2px solid var(--turmeric);
-  outline-offset: 1px;
-  border-color: transparent;
-}
-
-.admin-bar-search + .admin-bar-user {
-  margin-left: 0;
-}
-
 .report-cards {
   list-style: none;
   margin: 0 0 2rem;
@@ -4507,18 +4415,13 @@ fieldset.segmented {
   }
 }
 
-@media (pointer: coarse) {
-  .admin-bar-search input { min-height: 44px; font-size: 16px; }
-}
+
 
 @media (max-width: 1000px) {
   .books-dashboard { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 700px) {
-  .admin-bar-search { order: 2; margin-left: 0; flex: 1 1 100%; }
-  .admin-bar-search input { flex: 1; width: auto; min-height: 44px; font-size: 16px; }
-  .admin-bar-search + .admin-bar-user { margin-left: auto; }
   .reorder-groups li { flex-direction: column; align-items: stretch; }
   .reorder-groups .stock-save { width: 100%; justify-content: center; }
   .cash-columns, .cash-x { column-gap: 4px; }
@@ -4529,4 +4432,490 @@ fieldset.segmented {
   .table-cards tfoot th { display: block; text-align: left; padding: .3rem 0; border: 0; }
   .table-cards tfoot td { border-top: 0; }
   .table-cards td.no-card { display: none; }
+}
+
+/* ==========================================================================
+   31. Admin header — sticky; desktop nav + search + View store + account menu; hamburger at ≤ 768px
+   ========================================================================== */
+
+.admin-bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 1.6rem;
+  min-height: 64px;
+  padding: 0 4vw;
+  background: var(--charcoal);
+  color: var(--cotton);
+}
+
+.admin-bar .logo {
+  flex: none;
+}
+
+.admin-bar .logo img {
+  display: block;
+  width: 44px;
+  height: 44px;
+}
+
+.admin-bar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-nav-main {
+  min-width: 0;
+}
+
+.admin-nav-main ul {
+  display: flex;
+  gap: 1.4rem;
+}
+
+.admin-bar nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+}
+
+.admin-bar nav a:hover {
+  color: var(--turmeric);
+}
+
+.admin-bar nav a.is-active {
+  border-bottom-color: var(--turmeric);
+}
+
+.admin-bar nav a:focus-visible,
+.admin-bar summary:focus-visible,
+.admin-view-store:focus-visible,
+.admin-signout:focus-visible {
+  outline: 2px solid var(--turmeric);
+  outline-offset: 2px;
+}
+
+.admin-bar-search {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin-left: auto;
+  color: var(--cotton-2);
+}
+
+.admin-bar-search input {
+  font: inherit;
+  font-size: 13px;
+  width: 160px;
+  min-height: 36px;
+  padding: 6px 8px;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--cotton) 55%, transparent);
+  color: var(--cotton);
+}
+
+.admin-bar-search input::placeholder {
+  color: color-mix(in srgb, var(--cotton) 70%, transparent);
+}
+
+.admin-bar-search input:focus {
+  outline: 2px solid var(--turmeric);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.admin-view-store {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--cotton);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  white-space: nowrap;
+  flex: none;
+}
+
+.admin-view-store:hover {
+  background: var(--cotton);
+  color: var(--charcoal);
+}
+
+.admin-account,
+.admin-menu {
+  position: relative;
+  flex: none;
+}
+
+.admin-bar summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.admin-bar summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-account summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 12px;
+  color: var(--cotton-2);
+}
+
+.admin-account-email {
+  display: inline-block;
+  max-width: 14ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-account summary::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-left: .5rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+}
+
+.admin-account-panel,
+.admin-menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  background: var(--charcoal);
+  color: var(--cotton);
+  border: 1px solid color-mix(in srgb, var(--cotton) 25%, transparent);
+}
+
+.admin-account-panel {
+  min-width: 240px;
+  padding: 1rem 1.2rem;
+}
+
+.admin-account-panel p {
+  margin: 0 0 .8rem;
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.admin-account-panel small {
+  font-size: 11px;
+  color: var(--cotton-2);
+}
+
+.admin-signout {
+  width: 100%;
+  min-height: 44px;
+  background: none;
+  border: 1px solid var(--cotton);
+  color: var(--cotton);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  cursor: pointer;
+}
+
+.admin-signout:hover {
+  background: var(--cotton);
+  color: var(--charcoal);
+}
+
+/* Phone menu (hidden on desktop) */
+.admin-menu {
+  display: none;
+  margin-left: auto;
+}
+
+.admin-menu summary {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 .4rem;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.admin-menu-close,
+.admin-menu[open] .admin-menu-open {
+  display: none;
+}
+
+.admin-menu[open] .admin-menu-close {
+  display: inline;
+}
+
+.admin-menu-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 64px;
+  bottom: 0;
+  overflow-y: auto;
+  padding: 1rem 6vw calc(2rem + env(safe-area-inset-bottom));
+  border-top: 1px solid color-mix(in srgb, var(--cotton) 20%, transparent);
+}
+
+.admin-menu-panel .admin-bar-search {
+  margin: 0 0 1.2rem;
+}
+
+.admin-menu-panel .admin-bar-search input {
+  flex: 1;
+  width: auto;
+  min-height: 44px;
+  font-size: 16px;
+}
+
+.admin-menu-group {
+  margin: 1rem 0 .2rem;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--turmeric);
+}
+
+.admin-menu-panel nav ul {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 1rem;
+}
+
+.admin-menu-panel nav a {
+  width: 100%;
+  font-size: 15px;
+  border-bottom: 1px solid color-mix(in srgb, var(--cotton) 12%, transparent);
+}
+
+.admin-menu-panel nav a.is-active {
+  color: var(--turmeric);
+  border-bottom-color: color-mix(in srgb, var(--cotton) 12%, transparent);
+}
+
+.admin-menu-foot {
+  margin-top: 1.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: .8rem;
+}
+
+.admin-menu-foot .admin-view-store {
+  min-height: 44px;
+  justify-content: center;
+}
+
+.admin-menu-email {
+  margin: .4rem 0 0;
+  font-size: 12px;
+  color: var(--cotton-2);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1180px) {
+  .admin-nav-main ul { gap: 1rem; }
+  .admin-bar-search input { width: 120px; }
+}
+
+@media (max-width: 768px) {
+  .admin-bar { padding: 0 6vw; height: 64px; }
+  .admin-nav-main,
+  .admin-bar > .admin-bar-search,
+  .admin-bar > .admin-view-store,
+  .admin-account { display: none; }
+  .admin-menu { display: block; }
+}
+
+/* Books sub-navigation: one row; scrolls sideways on phones instead of wrapping. */
+.books-nav ul {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  gap: 0 1.6rem;
+}
+
+.books-nav ul::-webkit-scrollbar {
+  display: none;
+}
+
+.books-nav li {
+  flex: none;
+}
+
+.books-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .books-nav {
+    margin-left: -6vw;
+    margin-right: -6vw;
+  }
+  .books-nav ul {
+    padding: 0 6vw;
+    scroll-padding: 0 6vw;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 6vw, #000 calc(100% - 6vw), transparent 100%);
+            mask-image: linear-gradient(90deg, transparent 0, #000 6vw, #000 calc(100% - 6vw), transparent 100%);
+  }
+  .books-nav-label { display: none; }
+}
+
+@media print {
+  .admin-bar { position: static; }
+}
+
+/* ==========================================================================
+   32. Storefront on phones: category chips, WhatsApp button, shop intro, admin link
+   ========================================================================== */
+
+/* Category chips: pills (the owner's choice for tappable filters), sticky under the fixed navbar. */
+.shop-body {
+  position: relative;
+}
+
+.shop-chips {
+  position: sticky;
+  top: 78px;
+  z-index: 5;
+  background: var(--cotton);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: .8rem 10vw;
+}
+
+.shop-chips ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: .6rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.shop-chips ul::-webkit-scrollbar {
+  display: none;
+}
+
+.shop-chips-sub {
+  margin-top: .6rem !important;
+}
+
+.shop-chips li {
+  flex: none;
+}
+
+.shop-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid rgba(42,38,34,.35);
+  border-radius: 999px;
+  font-size: 14px;
+  white-space: nowrap;
+  gap: .35em;
+  color: var(--charcoal);
+  transition: background .2s, color .2s, border-color .2s;
+}
+
+.shop-chip:hover {
+  border-color: var(--madder);
+  color: var(--madder);
+}
+
+.shop-chip.is-parent {
+  border-color: var(--madder);
+}
+
+.shop-chip.is-active {
+  background: var(--madder);
+  border-color: var(--madder);
+  color: var(--cotton);
+}
+
+.shop-chip-count {
+  opacity: .75;
+}
+
+.shop-chip:focus-visible {
+  outline: 2px solid var(--turmeric);
+  outline-offset: 2px;
+}
+
+.shop-chips-sub .shop-chip {
+  min-height: 40px;
+  font-size: 13px;
+}
+
+/* Floating WhatsApp: desktop tab keeps its label; the icon is phones-only. */
+.floating-whatsapp-icon {
+  display: none;
+}
+
+/* "Admin panel" in the storefront header (admins only) */
+.nav-admin {
+  color: var(--turmeric);
+}
+
+@media (max-width: 700px) {
+  .shop-chips {
+    top: 64px;
+    padding: .6rem 0;
+  }
+  .shop-chips ul {
+    padding: 0 8vw;
+    scroll-padding: 0 8vw;
+  }
+  .shop-header .section-heading > p {
+    max-width: none;
+  }
+
+  .floating-whatsapp {
+    width: 52px;
+    height: 52px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+  .floating-whatsapp-label,
+  .floating-whatsapp-arrow {
+    display: none;
+  }
+  .floating-whatsapp-icon {
+    display: block;
+    width: 24px;
+    height: 24px;
+  }
+  /* Room at the bottom of every page so the round WhatsApp button never covers the last content. */
+  .store-main {
+    padding-bottom: 84px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shop-chip { transition: none; }
 }

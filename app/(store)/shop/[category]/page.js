@@ -16,10 +16,11 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function CategoryPage({ params }) {
-  const [category, categories, products] = await Promise.all([
+  const [category, categories, products, allProducts] = await Promise.all([
     getCategoryBySlug(params.category),
     getCategories(),
     getProducts({ categorySlug: params.category }),
+    getProducts(), // for the counts on the category chips
   ]);
   if (!category) notFound();
 
@@ -31,5 +32,6 @@ export default async function CategoryPage({ params }) {
     categories={categories}
     activeSlug={category.slug}
     products={products}
+    allProducts={allProducts}
   />;
 }

@@ -37,7 +37,9 @@ export async function saveExpense(_prevState, formData) {
   const { data: savedId, error: saveError } = await createSupabaseServerClient().rpc("books_save_expense", { p_id: id, p_data: data });
   if (saveError) return { error: friendly(saveError) };
   refresh();
-  if (!id && text(formData, "intent") === "another") {
+  // "Save & add another" goes back to a fresh form, except for a repeating expense: that always opens, so its
+  // next due date and reminder can be checked.
+  if (!id && text(formData, "intent") === "another" && !data.is_recurring) {
     redirect(`/admin/books/expenses/new?${new URLSearchParams({ saved: savedId, on: data.spent_on, via: data.paid_via })}`);
   }
   redirect(expenseUrl(savedId, { saved: id ? "updated" : "added" }));

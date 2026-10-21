@@ -48,15 +48,14 @@ export async function signUpCustomer(_prevState, formData) {
 
 export async function signInCustomer(_prevState, formData) {
   const supabase = createSupabaseServerClient();
-  const { error } = await supabase.auth.signInWithPassword({ email: text(formData, "email").toLowerCase(), password: String(formData.get("password") ?? "") });
+  const { data: signedIn, error } = await supabase.auth.signInWithPassword({ email: text(formData, "email").toLowerCase(), password: String(formData.get("password") ?? "") });
   if (error) {
     if (/not confirmed/i.test(error.message)) return { error: "Please confirm your email first — check your inbox for our link." };
     return { error: "Email or password is incorrect." };
   }
   const next = safeNextPath(formData.get("next"));
   if (next === "/account") {
-    const { data: { user } } = await supabase.auth.getUser();
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", signedIn.user.id).single();
     if (profile?.role === "admin") redirect("/admin");
   }
   redirect(next);
@@ -110,7 +109,7 @@ export async function changePassword(_prevState, formData) {
 const RECOVERY_WINDOW_MS = 60 * 60 * 1000;
 
 export async function updatePassword(_prevState, formData) {
-  const { user } = await assertSignedIn();
+  const { user } = await assertSignedIn({ verified: true }); // full record: recovery_sent_at
   const sentAt = user.recovery_sent_at ? new Date(user.recovery_sent_at).getTime() : 0;
   if (!sentAt || Date.now() - sentAt > RECOVERY_WINDOW_MS) {
     return { error: "This reset link has expired. Please request a new one from \"Forgot password?\", or change your password from your profile." };

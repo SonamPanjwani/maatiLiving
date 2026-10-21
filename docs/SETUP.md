@@ -244,8 +244,7 @@ What changes:
 3. `npm run check:launch` should no longer list `purchases` / `purchase_items` as missing.
 4. Then run `supabase/migrations/0009_purchase_cost_positive.sql` the same way: purchase lines must cost more than ₹0 (free samples go in with Inventory → Adjust stock → "Sample / gift").
 
-**Bill PDFs (one Cloudinary setting).** Bill photos and PDFs are uploaded as *private* files: nobody can open them without a link the site signs for an admin. Photos and PDF pages (shown as images) work straight away. To also open the **original PDF file**, switch on PDF delivery once:
-Cloudinary → ⚙ **Settings** → **Security** → tick **"Allow delivery of PDF and ZIP files"** → **Save**. (Until then "Original PDF" shows an error, but every page still opens as an image.)
+**Bill PDFs.** Bill photos and PDFs are uploaded as *private* files: nobody can open them without a link the site signs for an admin. Photos and PDF pages (shown as images) open through Cloudinary delivery; the **original PDF** opens through Cloudinary's signed download API (a 5-minute link made on the server for admins only), so it works on the free plan without switching on "Allow delivery of PDF and ZIP files".
 
 What's new (/admin → Books → **Purchases**):
 - **New purchase**: choose the vendor, add products (their last price fills in), shipping/discount/tax, the vendor's bill number/date, and photos or PDFs of the bill. "Pay by" fills itself from the bill date + the vendor's payment terms.
@@ -319,5 +318,6 @@ How the numbers work (for your CA): sales = item value of orders paid in the per
 | Books → Purchases crashes or says a table doesn't exist | 0008 hasn't been run on this Supabase project (§14). |
 | Books → Expenses crashes, or "expenses" doesn't exist | 0011 hasn't been run on this Supabase project (§16). The dashboard still loads without it. |
 | Books → Payments / Payables / Vendors crash, or "vendor_payment_allocations" doesn't exist | 0010 hasn't been run on this Supabase project (§15). |
-| A bill thumbnail is blank / "Original PDF" shows an error | Cloudinary PDF delivery is off (§14), or `CLOUDINARY_API_SECRET` is missing on the server. |
+| A bill thumbnail is blank / "Original PDF" shows an error | `CLOUDINARY_API_SECRET` or `NEXT_PUBLIC_CLOUDINARY_API_KEY` is missing on the server, or the file was uploaded to another Cloudinary account. |
+| "Cannot find module './1234.js'" in dev | A production build ran into `.next` while `npm run dev` was running. Stop dev (Ctrl+C), delete the `.next` folder, run `npm run dev` again. To build while dev runs, use `NEXT_DIST_DIR=.next-prod npm run build`. |
 | Paid but order shows "Confirming payment" | The browser closed before confirming. The webhook (8.4) fixes this automatically once it's set up. |

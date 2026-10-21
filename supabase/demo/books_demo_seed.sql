@@ -1,4 +1,5 @@
 -- DEMO DATA for testing the Books module on a DEV/TEST project only. Never run on production.
+-- It refuses to run on a project marked as production (see the first check below).
 -- Not a migration: lives outside supabase/migrations so it can't be applied by accident with them.
 -- Everything is named "DEMO" so it's easy to spot.
 --
@@ -14,6 +15,10 @@ declare
   v_shells uuid;
   v_id uuid;
 begin
+  -- Never on production: the production project is marked with settings.environment = "production" (docs/DEPLOY.md).
+  if exists (select 1 from public.settings where key = 'environment' and value #>> '{}' = 'production') then
+    raise exception 'This is the PRODUCTION database (settings.environment = production). The demo seed only runs on a test project.';
+  end if;
   if to_regclass('public.vendors') is null or to_regclass('public.purchases') is null or to_regclass('public.vendor_payments') is null
      or to_regclass('public.expenses') is null then
     raise exception 'Run migrations 0007, 0008, 0010 and 0011 first, then this file.';

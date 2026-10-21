@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { supabaseAnonKey, supabaseUrl } from "./config";
 
-// Refreshes the auth cookie and returns the signed-in user (or null).
+// Refreshes the auth cookie and returns the signed-in user id (or null). getClaims verifies the JWT locally
+// (asymmetric signing keys) and refreshes an expired session, so this needs no round trip on most requests.
 export async function updateSession(request) {
   let response = NextResponse.next({ request });
 
@@ -19,6 +20,7 @@ export async function updateSession(request) {
     },
   });
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getClaims();
+  const user = !error && data?.claims?.sub ? { id: data.claims.sub } : null;
   return { response, user };
 }

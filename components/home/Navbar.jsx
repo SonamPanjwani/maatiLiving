@@ -13,7 +13,7 @@ import { siteConfig } from "@/src/config/site";
 export default function Navbar({ solid = false }) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const accountName = useAccountName();
+  const { name: accountName, isAdmin } = useAccountName();
   const accountLabel = accountName ? `Hi, ${accountName}` : "My account";
   const close = () => setOpen(false);
 
@@ -27,8 +27,8 @@ export default function Navbar({ solid = false }) {
 
   return <header className={`navbar ${solid || scrolled ? "navbar-solid" : ""} ${open ? "nav-open" : ""}`}>
     <Link className="logo" href="/" aria-label="Maati Living home"><img src={siteConfig.logoUrl} alt="Maati Living" /></Link>
-    <nav className="desktop-nav" aria-label="Main navigation"><Link href="/shop">Shop</Link><Link href="/about">Our story</Link><Link href="/contact">Contact</Link><Link href="/account" className={accountName ? "nav-account is-signed-in" : "nav-account"}>{accountLabel}</Link><CartButton className="nav-enquire nav-cart" /></nav>
+    <nav className="desktop-nav" aria-label="Main navigation"><Link href="/shop">Shop</Link><Link href="/about">Our story</Link><Link href="/contact">Contact</Link>{isAdmin && <a href="/admin" className="nav-admin">Admin panel</a>}<Link href="/account" className={accountName ? "nav-account is-signed-in" : "nav-account"}>{accountLabel}</Link><CartButton className="nav-enquire nav-cart" /></nav>
     <div className="mobile-actions"><CartButton className="nav-cart nav-cart-mobile" onClick={close} /><button className="menu-toggle" aria-expanded={open} aria-controls="mobile-nav" onClick={() => setOpen(!open)} aria-label={open ? "Close menu" : "Open menu"}>{open ? <X /> : <Menu />}</button></div>
-    {open && <nav id="mobile-nav" className="mobile-nav" aria-label="Mobile navigation"><Link href="/shop" onClick={close}>Shop</Link><Link href="/about" onClick={close}>Our story</Link><Link href="/contact" onClick={close}>Contact</Link><Link href="/account" onClick={close}>{accountLabel}</Link></nav>}
+    {open && <nav id="mobile-nav" className="mobile-nav" aria-label="Mobile navigation"><Link href="/shop" onClick={close}>Shop</Link><Link href="/about" onClick={close}>Our story</Link><Link href="/contact" onClick={close}>Contact</Link><Link href="/account" onClick={close}>{accountLabel}</Link>{isAdmin && <a href="/admin" className="nav-admin">Admin panel</a>}</nav>}
   </header>;
 }

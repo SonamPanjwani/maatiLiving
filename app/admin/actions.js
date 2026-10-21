@@ -29,10 +29,10 @@ function revalidateStorefront() {
 
 export async function signIn(_prevState, formData) {
   const supabase = createSupabaseServerClient();
-  const { error } = await supabase.auth.signInWithPassword({ email: text(formData, "email"), password: String(formData.get("password") ?? "") });
+  const { data, error } = await supabase.auth.signInWithPassword({ email: text(formData, "email"), password: String(formData.get("password") ?? "") });
   if (error) return { error: "Email or password is incorrect." };
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { user } = data; // straight from the sign-in response (no extra round trip)
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   if (profile?.role !== "admin") {
     await supabase.auth.signOut();
