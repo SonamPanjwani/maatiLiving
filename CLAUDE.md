@@ -54,7 +54,8 @@ components/
                        UpiPaymentPanel (server: amount, UPI ID, intent link, QR via `qrcode`), UpiReferenceForm
   legal/               LegalPage (policy frame + draft notice), V (renders TODO values highlighted), BusinessAddress
 scripts/check-launch.mjs  `npm run check:launch`: env, business TODOs, live DB (migrations, admin, products, delivery)
-docs/                  SETUP.md (accounts/keys/migrations), DEPLOY.md (GitHub → Vercel → domain → live checklist)
+docs/                  SETUP.md (accounts/keys/migrations), DEPLOY.md (Netlify → production Supabase → Hostinger SMTP/DNS → go-live, rollback, backups),
+                       email-templates/ (Supabase auth emails → /auth/confirm)
   common/              shared pieces: CloudImage (client wrapper for CldImage),
                        TextilePlaceholder, WhatsAppLink, FloatingWhatsApp
   admin/               AdminBar, LoginForm, ProductForm, CategoryForm, ImageManager (multi-photo
@@ -81,7 +82,7 @@ src/
   lib/supabase/        config, server (cookie) client, public (cookie-free) client, middleware helper
   lib/orders.js        server-only: quoteCart (re-prices from DB), validateCustomer, create/markPaid/lookup
   lib/razorpay.js      server-only: create order, verify payment + webhook signatures
-  lib/email.js         server-only: optional Resend order emails (no-op without RESEND_API_KEY)
+  lib/email.js         server-only: order emails over SMTP via nodemailer (Hostinger; no-op without SMTP_* + MAIL_FROM), sendTestEmail
   lib/order-status.js  STATUS_LABELS, adminStatusLabel(order), ORDER_TABS (admin list + CSV export)
   lib/payment-mode.js  server-only getPaymentMode(): razorpay | upi | whatsapp
   lib/books/           data.js (admin reads), money.js (rupees⇄paise), vendors.js (validateVendor),
@@ -132,6 +133,7 @@ src/
 - **Books schema guard:** `books/layout.js` and `inventory/layout.js` call `missingBooksMigrations()` (`src/lib/books/schema.js`) and show `MigrationNotice` instead of crashing when a Books table is missing. Add new Books migrations to `BOOKS_MIGRATIONS`.
 - **Admin header** (`components/admin/AdminBar.jsx`, links in `src/config/admin-nav.js`): sticky; desktop nav · search · View store ↗ · account `<details>`; ≤ 1080px a `<details>` hamburger with Store / Books groups. Inventory lives under Books only. `ConfirmSubmit` / `SubmitButton` show "Saving…" while pending.
 - **Storefront:** shop category chips (`.shop-chips`, pills, sticky under the navbar, counts); phones get an icon-only round WhatsApp button (the footer reserves room for it). "Admin panel" link shows only when `/api/admin-status` (server, cookies + DB role) says so.
+- **Hosting:** Netlify (`netlify.toml`), production Supabase = a separate project built from `supabase/production/all-in-one.sql` (`npm run sql:production` regenerates it; a test fails if stale) and marked `settings.environment = production`. `npm run check:secrets` scans the built browser bundle for secret values/names. GitHub Actions: Supabase keep-alive (every 3 days) and an encrypted weekly backup.
 - **Tests:** `npm test` (node:test). `tests/db/*` boot PGlite with migrations (`tests/db/harness.mjs`); `tests/db/order-functions-regression.test.mjs` proves rewritten order functions keep identical stock results. Helpers imported by unit tests use relative `.js` imports (Node can't resolve `@/`). Demo data lives in `supabase/demo/` (never migrations).
 - Secrets/env: `.env.local` (git-ignored). Document every new var in `.env.example`.
 

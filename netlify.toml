@@ -1,0 +1,21 @@
+# Netlify build settings (Next.js). Netlify detects Next.js and uses its Next.js runtime automatically:
+# server-rendered pages, server actions, route handlers (/api/*) and middleware all run as Netlify Functions /
+# Edge Functions. Environment variables are set in the Netlify UI (Site configuration → Environment variables),
+# never in this file — see docs/DEPLOY.md for the full list.
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # Keep Next.js telemetry off in CI.
+  NEXT_TELEMETRY_DISABLED = "1"
+
+# The bare domain goes to www (the primary domain). Netlify also does this automatically once both are added under
+# Domain management with www as primary; this rule makes it explicit and keeps the path.
+[[redirects]]
+  from = "https://maatiliving.co.in/*"
+  to = "https://www.maatiliving.co.in/:splat"
+  status = 301
+  force = true

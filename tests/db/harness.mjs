@@ -9,6 +9,25 @@ const SEED = new URL("../../supabase/seed.sql", import.meta.url);
 export const ADMIN = "11111111-1111-1111-1111-111111111111";
 export const CUSTOMER = "22222222-2222-2222-2222-222222222222";
 
+// An empty database with the stand-in auth schema and Supabase's default grants (no migrations).
+export async function createEmptyDb() {
+  const db = new PGlite();
+  await db.exec(AUTH_STUB);
+  return db;
+}
+
+const AUTH_STUB = `
+    create schema auth;
+    create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}');
+    create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.sub', true), '')::uuid $$;
+    create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;
+    alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+    alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+    alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
+    grant usage on schema public, auth to anon, authenticated, service_role;
+    grant execute on all functions in schema auth to anon, authenticated, service_role;
+  `;
+
 // upTo: migration prefix to stop at (inclusive), e.g. "0006". Seed (catalogue) runs right after 0001.
 export async function createDb({ upTo = "9999" } = {}) {
   const db = new PGlite();

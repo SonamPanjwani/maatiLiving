@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { indianStates } from "@/src/config/shop";
 import { assertAdmin } from "@/src/lib/auth";
-import { ORDER_EMAIL_COLUMNS, sendOrderEmails, sendShippedEmail } from "@/src/lib/email";
+import { ORDER_EMAIL_COLUMNS, sendOrderEmails, sendShippedEmail, sendTestEmail } from "@/src/lib/email";
 import { rupeesToPaise } from "@/src/lib/books/money";
 import { isRazorpayConfigured, refundPayment } from "@/src/lib/razorpay";
 import { slugify } from "@/src/lib/slugify";
@@ -376,4 +376,19 @@ export async function saveShippingSettings(_prevState, formData) {
   if (error) return { error: friendlyDbError(error) };
   revalidateStorefront();
   return { saved: true };
+}
+
+// Sends one test email (to the address typed, else the signed-in admin) so the SMTP setup can be checked on the
+// live site. Shows the mail server's own error if it fails.
+export async function sendTestEmailAction(formData) {
+  const admin = await assertAdmin();
+  const to = text(formData, "to") || admin.user.email;
+  const back = (params) => `/admin/settings?${new URLSearchParams(params)}#email`;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) redirect(back({ email: "error", message: "Enter a valid email address." }));
+  try {
+    await sendTestEmail(to);
+  } catch (cause) {
+    redirect(back({ email: "error", message: String(cause?.message ?? cause).slice(0, 300) }));
+  }
+  redirect(back({ email: "sent", to }));
 }

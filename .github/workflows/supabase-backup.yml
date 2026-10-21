@@ -1,0 +1,45 @@
+# Weekly backup of the production database (free plan has no downloadable backups): pg_dump through the Supabase
+# Session pooler, ENCRYPTED with a passphrase before upload (this repository is public), kept 30 days as a
+# workflow artifact. Needs repository secrets SUPABASE_DB_URL and BACKUP_PASSPHRASE (docs/DEPLOY.md, "Backups").
+# Restore: docs/DEPLOY.md, "Restore from a backup".
+name: Supabase weekly backup
+
+on:
+  schedule:
+    - cron: "30 21 * * 0"   # Mondays 03:00 IST
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Install PostgreSQL 17 client
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-17
+      - name: Dump, compress, encrypt
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ] || [ ${#BACKUP_PASSPHRASE} -lt 16 ]; then echo "Set SUPABASE_DB_URL and a BACKUP_PASSPHRASE of 16+ characters"; exit 1; fi
+          PG=/usr/lib/postgresql/17/bin
+          mkdir backup
+          # 1. The shop: every table, function and policy in public, with data.
+          $PG/pg_dump "$SUPABASE_DB_URL" --no-owner --no-privileges --schema=public -f backup/public.sql
+          # 2. Logins: user rows only (Supabase recreates the auth schema itself in a new project).
+          $PG/pg_dump "$SUPABASE_DB_URL" --no-owner --no-privileges --data-only --table=auth.users --table=auth.identities -f backup/auth-users.sql
+          tar -czf - backup | gpg --batch --yes --symmetric --cipher-algo AES256 --passphrase "$BACKUP_PASSPHRASE" -o maati-backup.tar.gz.gpg
+          ls -lh maati-backup.tar.gz.gpg
+      - name: Keep for 30 days
+        uses: actions/upload-artifact@v4
+        with:
+          name: maati-db-${{ github.run_number }}
+          path: maati-backup.tar.gz.gpg
+          retention-days: 30

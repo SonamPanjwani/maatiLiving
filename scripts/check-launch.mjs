@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Pre-launch checklist: `npm run check:launch`
-// Reads .env.local (overridden by real environment variables, e.g. on Vercel), the business
+// Pre-launch checklist: `npm run check:launch` (or `npm run check:launch -- --env .env.production.local` to check
+// the production values). Reads that env file (default .env.local; real environment variables win), the business
 // config, and — when keys are present — the live Supabase database. Never prints secret values.
 // Exit code 1 if anything blocks launch.
 import { existsSync, readFileSync } from "node:fs";
@@ -8,10 +8,17 @@ import { existsSync, readFileSync } from "node:fs";
 const root = new URL("..", import.meta.url);
 const read = (path) => readFileSync(new URL(path, root), "utf8");
 
+const envFlag = process.argv.indexOf("--env");
+const envFile = envFlag > -1 ? process.argv[envFlag + 1] : ".env.local";
+
 function loadEnv() {
   const env = {};
-  if (existsSync(new URL(".env.local", root))) {
-    for (const line of read(".env.local").split(/\r?\n/)) {
+  if (envFlag > -1 && !existsSync(new URL(envFile, root))) {
+    console.error(`Env file not found: ${envFile}`);
+    process.exit(1);
+  }
+  if (existsSync(new URL(envFile, root))) {
+    for (const line of read(envFile).split(/\r?\n/)) {
       const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
       if (match) env[match[1]] = match[2].replace(/^["']|["']$/g, "");
     }
@@ -73,11 +80,18 @@ const email = env.NEXT_PUBLIC_CONTACT_EMAIL ?? "";
 if (!email || email.endsWith("@example.com")) block("NEXT_PUBLIC_CONTACT_EMAIL is not set to a real address.");
 else ok("Contact email");
 
-if (!has("RESEND_API_KEY") || !has("EMAIL_FROM")) warn("Order emails are off (RESEND_API_KEY / EMAIL_FROM). Orders still work; customers just won't get emails.");
+const smtpKeys = ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS", "MAIL_FROM"];
+const smtpMissing = smtpKeys.filter((key) => !has(key));
+if (smtpMissing.length === smtpKeys.length) warn("Order emails are off (SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS / MAIL_FROM). Orders still work; customers just won't get emails.");
+else if (smtpMissing.length) block(`Order emails half set up — missing ${smtpMissing.join(", ")}.`);
 else {
-  ok("Order emails");
+  const fromAddress = (env.MAIL_FROM.match(/<([^>]+)>/)?.[1] ?? env.MAIL_FROM).trim().toLowerCase();
+  if (fromAddress !== env.SMTP_USER.trim().toLowerCase()) warn(`MAIL_FROM (${fromAddress}) isn't the SMTP mailbox (${env.SMTP_USER}). Hostinger may reject it or it may land in spam.`);
+  if (!["465", "587"].includes(env.SMTP_PORT)) warn(`SMTP_PORT ${env.SMTP_PORT}: Hostinger uses 465 (SSL) or 587 (STARTTLS).`);
+  ok(`Order emails via ${env.SMTP_HOST} from ${fromAddress} (send a test from /admin → Delivery)`);
   if (!has("ORDER_NOTIFY_EMAIL")) warn("ORDER_NOTIFY_EMAIL not set — you won't get new-order emails.");
 }
+if (has("RESEND_API_KEY")) warn("RESEND_API_KEY is set but no longer used (emails go over SMTP). You can remove it.");
 
 // ---------------------------------------------------------------- hero photos in the configured Cloudinary cloud
 if (has("NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME")) {
@@ -135,6 +149,13 @@ if (has("NEXT_PUBLIC_SUPABASE_URL") && secretKey) {
       if (noPhotos.length) warn(`${noPhotos.length} visible product(s) have no photos: ${noPhotos.map((product) => product.slug).join(", ")}`);
       const samples = products.filter((product) => ["terracotta-diya-set-of-6", "coconut-shell-hanging-planter", "coconut-shell-agarbatti-stand"].includes(product.slug));
       if (samples.length) warn(`Sample products from seed.sql are still there (${samples.map((product) => product.slug).join(", ")}). Edit or delete them.`);
+
+      // Production database marker (blocks the demo seed). Only expected when checking the live site's values.
+      const environment = (await rest("settings?select=value&key=eq.environment")).body?.[0]?.value;
+      if (siteUrl.startsWith("https://") && !siteUrl.includes("localhost")) {
+        if (environment !== "production") block(`This database isn't marked as production (settings.environment). Run the "Mark as production" SQL in docs/DEPLOY.md — it also stops the demo seed from ever running here.`);
+        else ok("Database marked as production");
+      } else if (environment === "production") warn("This is the PRODUCTION database but NEXT_PUBLIC_SITE_URL isn't the live domain — are you pointing dev at production?");
 
       const shipping = (await rest("settings?select=value&key=eq.shipping")).body?.[0]?.value;
       if (!shipping) warn("No delivery settings saved — the default ₹99 applies everywhere. Set them in /admin → Delivery.");

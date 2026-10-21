@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "check:launch": "node scripts/check-launch.mjs",
-    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-concurrency=1 \"tests/**/*.test.mjs\""
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-concurrency=1 \"tests/**/*.test.mjs\"",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "sql:production": "node scripts/build-production-sql.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -17,6 +19,7 @@
     "lucide-react": "^0.468.0",
     "next": "^14.2.15",
     "next-cloudinary": "^6.16.0",
+    "nodemailer": "^6.9.16",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

@@ -120,16 +120,19 @@ The webhook makes sure an order is marked paid even if the customer closes the t
 - Events: `payment.captured`, `order.paid`, `payment.failed`
 
 ### 8.5 Order emails (optional)
-Without this, orders still work and show in /admin. With it, the customer gets a confirmation and you get a new-order alert.
-1. Sign up at [resend.com](https://resend.com) → add and verify your domain → create an API key.
-2. Add to `.env.local`:
+Without this, orders still work and show in /admin. With it, the customer gets order / payment / shipping emails and you get a new-order alert. They go from the shop's Hostinger mailbox over SMTP. Add to `.env.local`:
 
-   ```
-   RESEND_API_KEY=re_xxxxxxxx
-   EMAIL_FROM=Maati Living <orders@yourdomain.com>
-   ORDER_NOTIFY_EMAIL=you@example.com
-   NEXT_PUBLIC_SITE_URL=http://localhost:3000
-   ```
+```
+SMTP_HOST=smtp.hostinger.com
+SMTP_PORT=465
+SMTP_USER=contact@maatiliving.co.in
+SMTP_PASS=<the mailbox password>
+MAIL_FROM=Maati Living <contact@maatiliving.co.in>
+ORDER_NOTIFY_EMAIL=<your inbox>
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+Restart `npm run dev`, then **/admin → Delivery → Order emails → Send test email**. For inbox (not spam) delivery, set up SPF / DKIM / DMARC (docs/DEPLOY.md, "Email").
 
 ### 8.6 Going live (after KYC)
 In the Razorpay dashboard switch to **Live Mode** → generate live keys → replace the two test keys (they start with `rzp_live_`). Set up the webhook again in Live Mode, since test and live webhooks are separate. The "Test mode" note on checkout disappears automatically.

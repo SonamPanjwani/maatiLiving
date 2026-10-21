@@ -7,9 +7,9 @@ node_modules/
 out/
 build/
 
-# env files (keep .env.example committed)
-.env*.local
-.env
+# env files: every .env* is secret except the committed template
+.env*
+!.env.example
 
 # logs
 npm-debug.log*
