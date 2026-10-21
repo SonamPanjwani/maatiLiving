@@ -7,8 +7,13 @@ import { productionSql } from "../../scripts/build-production-sql.mjs";
 
 const file = readFileSync(new URL("../../supabase/production/all-in-one.sql", import.meta.url), "utf8");
 
+// Line endings don't matter (git may check files out with CRLF on Windows).
+const lf = (text) => text.replace(/
+/g, "
+");
+
 test("all-in-one.sql matches the migrations (run `npm run sql:production` after adding one)", () => {
-  assert.equal(file, productionSql());
+  assert.equal(lf(file), lf(productionSql()));
 });
 
 test("all-in-one.sql builds an empty production database: every table, marked production, no sample data", async () => {
